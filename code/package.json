@@ -1,7 +1,7 @@
 {
   "name": "api-kryptstorm",
   "version": "1.0.0",
-  "description": "Kryptstorm API - microservices system ",
+  "description": "Kryptstorm API - microservices system",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -12,6 +12,7 @@
     "email": "tuan.nguyen070893@gmail.com",
     "url": "https://github.com/kryptstorm"
   },
+  "private": true,
   "scripts": {
     "start": "npm run start-dev",
     "start-dev": "NODE_ENV=development NODE_CONFIG_DIR=/code/src/config/ ./node_modules/.bin/nodemon src/index.js --exec babel-node",
@@ -52,5 +53,9 @@
     "sequelize-cli": "^2.7.0",
     "slug": "^0.9.1",
     "validator": "^7.1.0"
+  },
+  "engines": {
+    "node": ">= 6.0.0",
+    "npm": ">= 3.0.0"
   }
 }
