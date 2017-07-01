@@ -37,8 +37,8 @@ jspm_packages
 .node_repl_history
 
 # DB folder
-!db/mariadb/init.sql
 db/*
+!db/mariadb/init.sql
 
 # VSCode
 .vscode/*
