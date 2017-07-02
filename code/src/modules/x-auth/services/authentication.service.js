@@ -13,8 +13,8 @@ import {
 	VALIDATION_TYPE_NONE
 } from '../../x-user/models/user.model';
 
-const sign = Bluebird.promisify(JWT.sign);
-const verify = Bluebird.promisify(JWT.verify);
+const jwtSign = Bluebird.promisify(JWT.sign);
+const jwtVerify = Bluebird.promisify(JWT.verify);
 
 export default function XAuthAuthenticationService() {
 	const { act } = this.XService$;
@@ -49,6 +49,9 @@ export default function XAuthAuthenticationService() {
 		attributes.status = STATUS_INACTIVE;
 		/** Delete unnecessary field */
 		delete attributes['confirmPassword'];
+
+		// attributes.validation_expired = prepareValidationExpiredTime();
+
 
 		/** Begin create user */
 		return act('x_user:users, func:create', { payload$: { attributes } })
@@ -86,14 +89,14 @@ export default function XAuthAuthenticationService() {
 		return act('x_db:find_one', { model, where, returnFields: ['id', 'username', 'email', 'password'] })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 				if (errorCode$ !== 'ERROR_NONE') return done(null, failedResult);
+
 				return Bcrypt.compare(password, data$.password)
 					.then(isMatch => {
 						if (!isMatch) return done(null, failedResult);
 
-						return JWT.sign(_.pick(data$, ['id', 'username', 'email']), Config.get('jwt.secreteKey'), Config.get('jwt.defaultOptions'), function jwtEncode(err, token) {
-							if (err) return done(null, { _catch: err });
-							return done(null, { data$: { token } });
-						});
+						return jwtSign(_.pick(data$, ['id', 'username', 'email']), Config.get('jwt.secreteKey'), Config.get('jwt.defaultOptions'))
+							.then(token => done(null, { data$: { token } }))
+							.catch(_catch => done(null, { _catch }));
 					})
 					.catch(_catch => done(null, { _catch }));
 			})
@@ -106,7 +109,7 @@ export default function XAuthAuthenticationService() {
 		const { _meta = {} } = payload$;
 		if (!_meta.XToken) return done(null, failedResult);
 
-		return verify(_meta.XToken, Config.get('jwt.secreteKey'))
+		return jwtVerify(_meta.XToken, Config.get('jwt.secreteKey'))
 			.then(data => done(null, { data$: _.pick(data, ['id', 'username', 'email']) }))
 			.catch(_catch => done(null, { _catch }));
 	});

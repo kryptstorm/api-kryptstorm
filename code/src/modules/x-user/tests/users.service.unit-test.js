@@ -41,16 +41,16 @@ describe('XUser - users', function () {
 	})
 
 	it('Find all data', function (done) {
-		app.act('x_user:users, func:find_all', {}, function (err, result = {}) {
-			const { data$, _meta$ } = result;
-			expect(err).to.be.not.exist;
+		app.XService$.act('x_user:users, func:find_all', {})
+			.then(({ data$, _meta$ }) => {
 
-			expect(data$).to.be.an('array');
-			expect(_meta$).to.be.exist;
-			expect(_meta$.count).to.be.exist;
-			expect(_meta$.count).to.be.an('number');
-			return done();
-		})
+				expect(data$).to.be.an('array');
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => expect(err).to.be.not.exist);
 	});
 
 	it('Find all data with params', function (done) {
@@ -60,31 +60,31 @@ describe('XUser - users', function () {
 				status: STATUS_ACTIVE,
 			}
 		}
-		app.act('x_user:users, func:find_all', { payload$ }, function (err, result = {}) {
-			const { data$, _meta$ } = result;
-			expect(err).to.be.not.exist;
+		app.XService$.act('x_user:users, func:find_all', { payload$ })
+			.then(({ data$, _meta$ }) => {
 
-			expect(data$).to.be.an('array');
-			expect(_meta$).to.be.exist;
-			expect(_meta$.count).to.be.exist;
-			expect(_meta$.count).to.be.an('number');
-			return done();
-		})
+				expect(data$).to.be.an('array');
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => expect(err).to.be.not.exist);
 	});
 
 	it('Create data', function (done) {
 		const payload$ = {
 			attributes: _.assign({}, getFakeUser(), { password: '123456' })
 		}
-		app.act('x_user:users, func:create', { payload$ }, function (err, result = {}) {
-			const { data$ } = result;
-			expect(err).to.be.not.exist;
+		app.XService$.act('x_user:users, func:create', { payload$ })
+			.then(({ data$ }) => {
 
-			expect(data$).to.be.an('object');
-			expect(data$.username).to.be.exist;
-			expect(data$.username).to.be.equal(payload$.attributes.username);
-			return done();
-		})
+				expect(data$).to.be.an('object');
+				expect(data$.username).to.be.exist;
+				expect(data$.username).to.be.equal(payload$.attributes.username);
+				return done();
+			})
+			.catch(err => expect(err).to.be.not.exist);
 	});
 
 });

@@ -77,7 +77,7 @@ export const prepareAttributes = attributes => {
 	if (attributes.status === STATUS_ACTIVE) {
 		_.assign(attributes, { validation_type: VALIDATION_TYPE_NONE, validation_expired: null });
 	}
-	if (attributes.status === STATUS_INACTIVE && (attributes.validation_type !== VALIDATION_TYPE_ACTIVE_ACCOUNT || !attributes.validation_expired) ) {
+	if (attributes.status === STATUS_INACTIVE && (attributes.validation_type !== VALIDATION_TYPE_ACTIVE_ACCOUNT || !attributes.validation_expired)) {
 		_.assign(attributes, { validation_type: VALIDATION_TYPE_ACTIVE_ACCOUNT, validation_expired: Date.now() });
 	}
 
@@ -169,7 +169,7 @@ export default {
 	},
 	validation_expired: {
 		type: Sequelize.DATE,
-		defaultValue: Sequelize.NOW,
+		// defaultValue: Sequelize.NOW,
 		allowNull: true,
 	}
 }
@@ -178,12 +178,13 @@ export const schemaOptions = {
 	hooks: {
 		beforeCreate(instance) {
 			const { dataValues = {} } = instance;
+
 			if (!instance.changed('password')) {
 				return Sequelize.Promise.reject(new Error('Password was not changed.'));
 			}
 			return Bcrypt.hash(dataValues.password, 10).then(hashedPassword => {
 				dataValues.password = hashedPassword;
 			});
-		}
+		},
 	}
 };

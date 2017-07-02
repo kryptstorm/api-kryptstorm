@@ -22,6 +22,9 @@ const models = [...XUser.models, ...XAuth.models];
 /** Routes config */
 const routes = [XUser.routes, XAuth.routes];
 
+/** Public routes - guest can access */
+const publicRoutes = [...XUser.publicRoutes, ...XAuth.publicRoutes];
+
 /** Seneca plugins */
 const services = [...XUser.services, ...XAuth.services];
 
@@ -35,7 +38,7 @@ const App = Seneca(options);
 /** Register System service to handle application */
 App.use(XService);
 App.use(XDb, { models, tablePrefix: 'kryptstorm' });
-App.use(XWeb, { authentication: 'x_auth:authentication, func:verify', publicRoutes: ['/x-auth/', '/x-auth/auth/register', '/x-auth/auth/login', '/x-auth/auth/verify'] });
+App.use(XWeb, { authentication: 'x_auth:authentication, func:verify', publicRoutes });
 
 _.reduce(services, (app, nextService) => app.use(nextService), App)
 	/** Only handle http/socketio after all plugin was ready. */

@@ -22,4 +22,5 @@ export default {
 	},
 	models: [],
 	services: [XAuthDefaultService, XAuthAuthenticationService],
+	publicRoutes: ['/x-auth/auth/register', '/x-auth/auth/login', '/x-auth/auth/verify'],
 }

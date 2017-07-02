@@ -15,7 +15,7 @@ export const getFakeUser = () => {
 		first_name: Faker.name.firstName(),
 		last_name: Faker.name.lastName(),
 		created_at: Faker.date.past(),
-		password: '$2a$10$dFizCewZ/Vjnme9I13VXM.vVVOxPKTLiUvcC5c9K5hhQNUZ8OTNLu'
+		password: '123456'
 	}
 	if (pushData.status === STATUS_INACTIVE) {
 		pushData.validation_type = VALIDATION_TYPE_ACTIVE_ACCOUNT;

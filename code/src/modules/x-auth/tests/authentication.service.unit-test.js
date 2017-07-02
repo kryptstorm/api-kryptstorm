@@ -13,6 +13,9 @@ import XService from '../../../libs/x-service';
 import XAuth from '..';
 import XUser from '../../x-user';
 
+// import { getFakeUser } from '../../x-user/tests/helpers';
+// import { modelName, STATUS_ACTIVE, VALIDATION_TYPE_NONE } from '../../x-user/models/user.model';
+
 /** Model config */
 const models = [...XUser.models, ...XAuth.models];
 
@@ -30,7 +33,7 @@ describe('XAuth - authentication', function () {
 
 		return _.reduce(services, (app, nextService) => app.use(nextService), App);
 	}
-	let app, userPayload;
+	let app;
 
 	before((done) => {
 		app = _.reduce(services, (instance, nextService) => instance.use(nextService), TestApp(done));
@@ -50,59 +53,20 @@ describe('XAuth - authentication', function () {
 				last_name: Faker.name.lastName(),
 			}
 		}
-		app.act('x_auth:authentication, func:register', { payload$ }, function (err, result = {}) {
-			const { data$ } = result;
-			expect(err).to.be.not.exist;
 
-			expect(data$).to.be.an('object');
-			expect(data$.username).to.be.exist;
-			expect(data$.username).to.be.equal(payload$.attributes.username.toLowerCase());
-			expect(data$.email).to.be.equal(payload$.attributes.email.toLowerCase());
-			userPayload = {
-				username: data$.username,
-				email: data$.email,
-				password: payload$.attributes.password,
-			}
-			return done();
-		})
-	});
+		app.XService$.act('x_auth:authentication, func:register', { payload$ })
+			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
-	it('Login with username', function (done) {
-		let payload$ = {
-			attributes: {
-				username: userPayload.username,
-				password: userPayload.password,
-			}
-		};
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
-		app.act('x_auth:authentication, func:login', { payload$ }, function (err, result = {}) {
-			const { data$ } = result;
-			expect(err).to.be.not.exist;
+				expect(data$).to.be.an('object');
+				expect(data$.username).to.be.exist;
+				expect(data$.username).to.be.equal(payload$.attributes.username.toLowerCase());
+				expect(data$.email).to.be.equal(payload$.attributes.email.toLowerCase());
 
-			expect(data$).to.be.an('object');
-			expect(data$.token).to.be.exist;
-			expect(data$.token).to.be.an('string');
-			return done();
-		})
-	});
-
-	it('Login with email', function (done) {
-		let payload$ = {
-			attributes: {
-				email: userPayload.email,
-				password: userPayload.password,
-			}
-		};
-
-		app.act('x_auth:authentication, func:login', { payload$ }, function (err, result = {}) {
-			const { data$ } = result;
-			expect(err).to.be.not.exist;
-
-			expect(data$).to.be.an('object');
-			expect(data$.token).to.be.exist;
-			expect(data$.token).to.be.an('string');
-			return done();
-		})
+				return done();
+			})
+			.catch(err => expect(err).to.be.not.exist);
 	});
 
 });

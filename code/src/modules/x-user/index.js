@@ -29,4 +29,5 @@ export default {
 		{ name: modelName, schema: User, schemaOptions }
 	],
 	services: [XUserDefaultService, XUserUsersService],
+	publicRoutes: ['/x-user/users/validation/unique'],
 }
