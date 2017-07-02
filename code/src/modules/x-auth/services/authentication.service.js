@@ -9,6 +9,7 @@ import Bluebird from 'bluebird';
 /** Internal modules */
 import {
 	modelName as model,
+	publicFields,
 	STATUS_INACTIVE, STATUS_ACTIVE,
 	VALIDATION_TYPE_NONE
 } from '../../x-user/models/user.model';
@@ -110,7 +111,17 @@ export default function XAuthAuthenticationService() {
 		if (!_meta.XToken) return done(null, failedResult);
 
 		return jwtVerify(_meta.XToken, Config.get('jwt.secreteKey'))
-			.then(data => done(null, { data$: _.pick(data, ['id', 'username', 'email']) }))
+			.then(({ id, username, email }) => {
+				if (!id) return done(null, failedResult);
+
+				return act('x_db:find_by_id', { model, id: Number(id), returnFields: publicFields })
+					.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+						if (errorCode$ !== 'ERROR_NONE' || username !== data$.username || email !== data$.email) return done(null, failedResult);
+
+						return done(null, { data$: _.pick(data$, ['id', 'username', 'email']) });
+					})
+					.catch(_catch => done(null, { _catch }));
+			})
 			.catch(_catch => done(null, { _catch }));
 	});
 

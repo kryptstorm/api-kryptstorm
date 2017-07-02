@@ -151,8 +151,6 @@ describe('XAuth - authentication', function () {
 				expect(data$.username).to.be.equal(validUser.username);
 				expect(data$.email).to.be.equal(validUser.email);
 
-				if (!token) token = data$.token;
-
 				return done();
 			})
 			.catch(err => done(err));
