@@ -28,7 +28,7 @@ describe('XAuth - authentication', function () {
 		})
 			.test(fn)
 			.use(XService)
-			.use(XDb, { models, tablePrefix: 'kryptstorm', options: { logging: false } });
+			.use(XDb, { models, tablePrefix: 'kryptstorm', options: { logging: console.log } });
 
 		return _.reduce(services, (app, nextService) => app.use(nextService), App);
 	}

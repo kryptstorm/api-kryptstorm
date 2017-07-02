@@ -36,7 +36,7 @@ export default function XUserUsersService() {
 
 				return done(null, _.assign(result, { data$ }));
 			})
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_user:users, func:find_by_id', function xUserUsersFindByIdUser({ payload$ = {} }, done) {
@@ -45,7 +45,7 @@ export default function XUserUsersService() {
 
 		return act('x_db:find_by_id', { model, id: Number(params.id), returnFields: publicFields })
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_user:users, func:find_all', function findUser({ payload$ = {} }, done) {
@@ -62,7 +62,7 @@ export default function XUserUsersService() {
 
 		return act('x_db:find_all', modelData)
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_user:users, func:update_by_id', function xUserUsersUpdateUser({ payload$ = {} }, done) {
@@ -83,7 +83,7 @@ export default function XUserUsersService() {
 
 				return done(null, _.assign(result, { data$ }));
 			})
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_user:users, func:delete_by_id', function xUserUsersDeleteByIdUser({ payload$ = {} }, done) {
@@ -92,7 +92,7 @@ export default function XUserUsersService() {
 
 		return act('x_db:delete_by_id', { model, id: Number(params.id), returnFields: publicFields })
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_user:users, validate:unique', function xUserUsersValidateUnique({ payload$ }, done) {
@@ -113,7 +113,7 @@ export default function XUserUsersService() {
 
 		return act('x_db:validate, scenario:unique', params)
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	/** You must return plugin name */

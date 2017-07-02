@@ -306,5 +306,5 @@ function _handleError(done, returnErrorFields = [], _catch) {
 		return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: `Validation was failed.`, errors$ });
 	}
 
-	return done(null, { _catch });
+	return done(null, { errorCode$: 'ERROR_SYSTEM', _catch });
 }

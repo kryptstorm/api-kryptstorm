@@ -11,7 +11,7 @@ import {
 	modelName as model,
 	publicFields,
 	STATUS_INACTIVE, STATUS_ACTIVE,
-	VALIDATION_TYPE_NONE
+	VALIDATION_TYPE_NONE, VALIDATION_TYPE_ACTIVE_ACCOUNT
 } from '../../x-user/models/user.model';
 
 const jwtSign = Bluebird.promisify(JWT.sign);
@@ -48,16 +48,16 @@ export default function XAuthAuthenticationService() {
 
 		/** Set status for new user */
 		attributes.status = STATUS_INACTIVE;
+		/** Set validation type */
+		attributes.validation_type = VALIDATION_TYPE_ACTIVE_ACCOUNT;
+
 		/** Delete unnecessary field */
 		delete attributes['confirmPassword'];
-
-		// attributes.validation_expired = prepareValidationExpiredTime();
-
 
 		/** Begin create user */
 		return act('x_user:users, func:create', { payload$: { attributes } })
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_auth:authentication, func:login', function xAuthAuthenticatioLogin({ payload$ = {} }, done) {
@@ -97,11 +97,11 @@ export default function XAuthAuthenticationService() {
 
 						return jwtSign(_.pick(data$, ['id', 'username', 'email']), Config.get('jwt.secreteKey'), Config.get('jwt.defaultOptions'))
 							.then(token => done(null, { data$: { token } }))
-							.catch(_catch => done(null, { _catch }));
+							.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 					})
-					.catch(_catch => done(null, { _catch }));
+					.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 			})
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	this.add('x_auth:authentication, func:verify', function xAuthAuthenticatioVerify({ payload$ = {} }, done) {
@@ -120,9 +120,9 @@ export default function XAuthAuthenticationService() {
 
 						return done(null, { data$: _.pick(data$, ['id', 'username', 'email']) });
 					})
-					.catch(_catch => done(null, { _catch }));
+					.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 			})
-			.catch(_catch => done(null, { _catch }));
+			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
 	/** You must return plugin name */

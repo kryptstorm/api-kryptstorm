@@ -74,15 +74,20 @@ export const prepareAttributes = attributes => {
 	}
 
 	/** Now, you can add what you want save only on server */
+	/** Status is active, we don't need validation data */
 	if (attributes.status === STATUS_ACTIVE) {
 		_.assign(attributes, { validation_type: VALIDATION_TYPE_NONE, validation_expired: null });
 	}
+	/** If status is inactive, that mean this is new user, overwrite current validation type and validation expired */
 	if (attributes.status === STATUS_INACTIVE && (attributes.validation_type !== VALIDATION_TYPE_ACTIVE_ACCOUNT || !attributes.validation_expired)) {
-		_.assign(attributes, { validation_type: VALIDATION_TYPE_ACTIVE_ACCOUNT, validation_expired: Date.now() });
+		_.assign(attributes, { validation_type: VALIDATION_TYPE_ACTIVE_ACCOUNT, validation_expired: prepareValidationExpiredTimes() });
 	}
 
 	return attributes;
 }
+
+// export const prepareValidationExpiredTimes = () => new Date().setDate(new Date().getDate()+7);
+const prepareValidationExpiredTimes = () => Sequelize.fn('ADDDATE', Sequelize.fn('NOW'), 7);
 
 export default {
 	username: {
@@ -169,7 +174,7 @@ export default {
 	},
 	validation_expired: {
 		type: Sequelize.DATE,
-		// defaultValue: Sequelize.NOW,
+		defaultValue: prepareValidationExpiredTimes(),
 		allowNull: true,
 	}
 }

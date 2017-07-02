@@ -42,7 +42,9 @@ describe('XUser - users', function () {
 
 	it('Find all data', function (done) {
 		app.XService$.act('x_user:users, func:find_all', {})
-			.then(({ data$, _meta$ }) => {
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
 				expect(data$).to.be.an('array');
 				expect(_meta$).to.be.exist;
@@ -61,7 +63,9 @@ describe('XUser - users', function () {
 			}
 		}
 		app.XService$.act('x_user:users, func:find_all', { payload$ })
-			.then(({ data$, _meta$ }) => {
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
 				expect(data$).to.be.an('array');
 				expect(_meta$).to.be.exist;
@@ -77,7 +81,9 @@ describe('XUser - users', function () {
 			attributes: _.assign({}, getFakeUser(), { password: '123456' })
 		}
 		app.XService$.act('x_user:users, func:create', { payload$ })
-			.then(({ data$ }) => {
+			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
 				expect(data$).to.be.an('object');
 				expect(data$.username).to.be.exist;
