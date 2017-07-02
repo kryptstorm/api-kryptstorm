@@ -50,7 +50,7 @@ describe('XUser - users', function () {
 				expect(_meta$.count).to.be.an('number');
 				return done();
 			})
-			.catch(err => expect(err).to.be.not.exist);
+			.catch(err => done(err));
 	});
 
 	it('Find all data with params', function (done) {
@@ -69,7 +69,7 @@ describe('XUser - users', function () {
 				expect(_meta$.count).to.be.an('number');
 				return done();
 			})
-			.catch(err => expect(err).to.be.not.exist);
+			.catch(err => done(err));
 	});
 
 	it('Create data', function (done) {
@@ -84,7 +84,7 @@ describe('XUser - users', function () {
 				expect(data$.username).to.be.equal(payload$.attributes.username);
 				return done();
 			})
-			.catch(err => expect(err).to.be.not.exist);
+			.catch(err => done(err));
 	});
 
 });
