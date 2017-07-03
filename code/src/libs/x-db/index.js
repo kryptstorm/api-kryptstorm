@@ -66,7 +66,7 @@ export default function XDb({
 			.catch(_handleError.bind(this, done, []));
 	});
 
-	this.add('x_db:create', function XDbCreate({ model, attributes, saveFields }, done) {
+	this.add('x_db:create', function XDbCreate({ model, attributes, saveFields, returnFields }, done) {
 		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, modelAfterValidate is instance of error */
 		if (!_.isString(modelAfterValidate)) {
@@ -84,7 +84,12 @@ export default function XDb({
 		return db
 			.model(modelAfterValidate)
 			.create(attributes, { fields: saveFields })
-			.then(row => done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } }))
+			.then(row => {
+				/** If params don't have returnFields, only return id */
+				returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
+				returnFields = _.uniq(returnFields);
+				return done(null, { data$: _.pick(row.get({ plain: true }), returnFields), _meta$: { count: 1 } });
+			})
 			.catch(_handleError.bind(this, done, saveFields));
 	});
 

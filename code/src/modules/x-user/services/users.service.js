@@ -26,16 +26,12 @@ export default function XUserUsersService() {
 		let modelData = {
 			model,
 			attributes: prepareAttributes(attributes),
-			saveFields: [...publicFields, 'password', 'validation_type', 'validation_expired']
+			saveFields: [...publicFields, 'password', 'validation_type', 'validation_expired'],
+			returnFields: prepareReturnFields([...publicFields, ...customPublicFields]),
 		};
 
 		return act('x_db:create', modelData)
-			.then((result = {}) => {
-				/** Only return allow data to client */
-				const data$ = _.pick(result.data$, [...publicFields, ...customPublicFields]);
-
-				return done(null, _.assign(result, { data$ }));
-			})
+			.then(done.bind(this, null))
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 

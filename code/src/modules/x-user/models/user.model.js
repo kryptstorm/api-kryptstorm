@@ -46,7 +46,7 @@ export const prepareCondition = conditions => {
 	}, {});
 }
 
-export const prepareReturnFields = choices => {
+export const prepareReturnFields = (choices = []) => {
 	let selected = _.filter((_.isArray(choices)) ? [...choices, ...publicFields] : [], v => _.includes(publicFields, v));
 
 	selected.push([Sequelize.fn('CONCAT', Sequelize.col('first_name'), ' ', Sequelize.col('last_name')), 'full_name']);
