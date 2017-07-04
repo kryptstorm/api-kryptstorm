@@ -1,17 +1,14 @@
 /** External modules */
 import _ from 'lodash';
-import Validator from 'validator';
 import Bcrypt from 'bcrypt';
 import Config from 'config';
 import JWT from 'jsonwebtoken';
 import Bluebird from 'bluebird';
 
 /** Internal modules */
-import {
-	modelName as model,
-	publicFields,
-	STATUS_INACTIVE, STATUS_ACTIVE,
-	VALIDATION_TYPE_NONE, VALIDATION_TYPE_ACTIVE_ACCOUNT
+import User, {
+	STATUS_NEW, STATUS_ACTIVE,
+	VALIDATION_TYPE_NONE,
 } from '../../x-user/models/user.model';
 
 const jwtSign = Bluebird.promisify(JWT.sign);
@@ -24,40 +21,27 @@ export default function XAuthAuthenticationService() {
 		return done();
 	});
 
-	this.add('x_auth:authentication, func:register', function xAuthAuthenticationRegister({ payload$ = {} }, done) {
-		/** This pattern is base on [x_user:users, func:create] */
-		if (!this.has('x_user:users, func:create')) {
-			return done(null, { _catch: new Error('Pattern [x_user:users, func:create] was not found.') });
-		}
-
+	/** Overwrite create function with register */
+	this.add('x_user:users, func:create', function xAuthAuthenticationRegister(args, done) {
+		let { payload$ = {} } = args;
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { attributes = {} } = payload$;
 
-		/** If username was not register, user the string before @ as username */
-		if (!attributes.username) {
-			attributes.username = Validator.isEmail(attributes.email) ? attributes.email.split('@')[0].toLowerCase() : '';
+		/** Password must be exist and can not be falsy value */
+		if (!attributes.password) {
+			return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: 'Validation has failed.', errors$: { password: 'Password can not be blank.' } });
 		}
-		/** Username and Email must be in lower case */
-		attributes.username = attributes.username.toLowerCase();
-		attributes.email = attributes.email ? attributes.email.toLowerCase() : '';
-
-		/** Password must be exist and match with confirmPassword */
-		if ((attributes.password !== attributes.confirmPassword) || !attributes.password) {
-			return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: 'Validation was failed.', errors$: { confirmPassword: 'Password does not match the confirm password.' } });
+		/** Confirm password must match with password */
+		if (attributes.password !== attributes.confirmPassword) {
+			return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: 'Validation has failed.', errors$: { confirmPassword: 'Password does not match the confirm password.' } });
 		}
+		delete attributes.confirmPassword;
 
 		/** Set status for new user */
-		attributes.status = STATUS_INACTIVE;
-		/** Set validation type */
-		attributes.validation_type = VALIDATION_TYPE_ACTIVE_ACCOUNT;
+		attributes.status = STATUS_NEW;
 
-		/** Delete unnecessary field */
-		delete attributes['confirmPassword'];
-
-		/** Begin create user */
-		return act('x_user:users, func:create', { payload$: { attributes } })
-			.then(done.bind(this, null))
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+		/** Run prior function */
+		this.prior(args, done);
 	});
 
 	this.add('x_auth:authentication, func:login', function xAuthAuthenticatioLogin({ payload$ = {} }, done) {
@@ -69,15 +53,15 @@ export default function XAuthAuthenticationService() {
 			$or: {},
 			$and: {
 				status: STATUS_ACTIVE,
-				validation_type: VALIDATION_TYPE_NONE
+				validation_type: VALIDATION_TYPE_NONE,
 			}
 		};
 
-		const failedResult = { errorCode$: 'ERROR_AUTH_LOGIN_FAILED', message$: 'Login has failed.', errors$: { email: 'Invalid email or password.', username: 'Invalid username or password.', password: 'Invalid ID or password.' } };
+		const loginFailed = { errorCode$: 'ERROR_AUTH_LOGIN_FAILED', message$: 'Login has failed.', errors$: { email: 'Invalid email or password.', username: 'Invalid username or password.', password: 'Invalid ID or password.' } };
 
 		/** If user don't provide both username and email, login will be failed, return error immediately */
 		if (!username && !email) {
-			return done(null, failedResult);
+			return done(null, loginFailed);
 		}
 
 		if (username) {
@@ -87,13 +71,12 @@ export default function XAuthAuthenticationService() {
 			where.$or.email = email;
 		}
 
-		return act('x_db:find_one', { model, where, returnFields: ['id', 'username', 'email', 'password'] })
+		return act('x_db:find_one', { model: User.name, where, returnFields: ['id', 'username', 'email', 'password'] })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
-				if (errorCode$ !== 'ERROR_NONE') return done(null, failedResult);
-
+				if (errorCode$ !== 'ERROR_NONE') return done(null, loginFailed);
 				return Bcrypt.compare(password, data$.password)
 					.then(isMatch => {
-						if (!isMatch) return done(null, failedResult);
+						if (!isMatch) return done(null, loginFailed);
 
 						return jwtSign(_.pick(data$, ['id', 'username', 'email']), Config.get('jwt.secreteKey'), Config.get('jwt.defaultOptions'))
 							.then(token => done(null, { data$: { token } }))
@@ -105,18 +88,18 @@ export default function XAuthAuthenticationService() {
 	});
 
 	this.add('x_auth:authentication, func:verify', function xAuthAuthenticatioVerify({ payload$ = {} }, done) {
-		const failedResult = { errorCode$: 'ERROR_AUTH_AUTHENTICATION_FAILED', message$: 'Your session has expired.' };
+		const verifyFailed = { errorCode$: 'ERROR_AUTH_AUTHENTICATION_FAILED', message$: 'Your session has expired.' };
 
 		const { _meta = {} } = payload$;
-		if (!_meta.XToken) return done(null, failedResult);
+		if (!_meta.XToken) return done(null, verifyFailed);
 
 		return jwtVerify(_meta.XToken, Config.get('jwt.secreteKey'))
 			.then(({ id, username, email }) => {
-				if (!id) return done(null, failedResult);
+				if (!id) return done(null, verifyFailed);
 
-				return act('x_db:find_by_id', { model, id: Number(id), returnFields: publicFields })
+				return act('x_db:find_by_id', { model: User.name, id: Number(id), returnFields: ['id', 'username', 'email'] })
 					.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
-						if (errorCode$ !== 'ERROR_NONE' || username !== data$.username || email !== data$.email) return done(null, failedResult);
+						if (errorCode$ !== 'ERROR_NONE' || username !== data$.username || email !== data$.email) return done(null, verifyFailed);
 
 						return done(null, { data$: _.pick(data$, ['id', 'username', 'email']) });
 					})

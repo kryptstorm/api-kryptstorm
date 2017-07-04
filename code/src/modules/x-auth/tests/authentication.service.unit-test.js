@@ -2,7 +2,6 @@
 import Seneca from 'seneca';
 import _ from 'lodash';
 import { expect } from 'chai';
-import Faker from 'faker';
 
 /** Internal modules */
 /** Kryptstorm system modules*/
@@ -13,14 +12,16 @@ import XService from '../../../libs/x-service';
 import XAuth from '..';
 import XUser from '../../x-user';
 
-import { modelName, STATUS_ACTIVE, VALIDATION_TYPE_NONE } from '../../x-user/models/user.model';
+import { generateFakeUser } from '../../x-user/tests/helpers';
+import User, { STATUS_ACTIVE, PUBLIC_FIELDS } from '../../x-user/models/user.model';
+
+const tablePrefix = 'kryptstorm';
 
 /** Model config */
 const models = [...XUser.models, ...XAuth.models];
 
 /** Seneca plugins */
 const services = [...XUser.services, ...XAuth.services];
-
 describe('XAuth - authentication', function () {
 	const TestApp = fn => {
 		const App = Seneca({
@@ -28,7 +29,7 @@ describe('XAuth - authentication', function () {
 		})
 			.test(fn)
 			.use(XService)
-			.use(XDb, { models, tablePrefix: 'kryptstorm', options: { logging: false } });
+			.use(XDb, { models, tablePrefix, options: { logging: false } });
 
 		return _.reduce(services, (app, nextService) => app.use(nextService), App);
 	}
@@ -37,24 +38,17 @@ describe('XAuth - authentication', function () {
 	before((done) => {
 		app = _.reduce(services, (instance, nextService) => instance.use(nextService), TestApp(done));
 		app.ready(function () {
-			const validUserAttributes = {
-				username: Faker.internet.userName(),
-				password: '123456', // equal to '123456'
-				email: Faker.internet.email(),
-				first_name: Faker.name.firstName(),
-				last_name: Faker.name.lastName(),
-				status: STATUS_ACTIVE,
-				validation_type: VALIDATION_TYPE_NONE
-			};
-
-			app.XService$.act('x_db:create', { model: modelName, attributes: validUserAttributes })
-				.then(() => {
+			const table = `${tablePrefix}_${User.name}`;
+			app.XDb$.model(table).truncate({ force: true })
+				.then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
+				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: PUBLIC_FIELDS }))
+				.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+					if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
 					validUser = {
-						username: validUserAttributes.username,
-						email: validUserAttributes.email,
-						password: validUserAttributes.password,
+						username: data$.username,
+						email: data$.email,
+						password: '123456',
 					}
-
 					return done();
 				})
 				.catch(err => done(err));
@@ -62,20 +56,13 @@ describe('XAuth - authentication', function () {
 	})
 
 	it('Register new user', function (done) {
+		const fakeUser = generateFakeUser();
 		const payload$ = {
-			attributes: {
-				username: Faker.internet.userName(),
-				password: '123456',
-				confirmPassword: '123456',
-				email: Faker.internet.email(),
-				first_name: Faker.name.firstName(),
-				last_name: Faker.name.lastName(),
-			}
+			attributes: _.assign(fakeUser, { confirmPassword: fakeUser.password })
 		}
-
-		app.XService$.act('x_auth:authentication, func:register', { payload$ })
+		
+		app.XService$.act('x_user:users, func:create', { payload$ })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
-
 				expect(errorCode$).to.be.equal('ERROR_NONE');
 
 				expect(data$).to.be.an('object');

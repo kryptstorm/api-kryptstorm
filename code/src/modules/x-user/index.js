@@ -4,7 +4,7 @@ import XUserUsersService from './services/users.service';
 import XUserDefaultService from './services/default.service';
 
 /** Schemas */
-import User, { modelName, schemaOptions } from './models/user.model';
+import User from './models/user.model';
 
 export default {
 	routes: {
@@ -25,9 +25,7 @@ export default {
 			},
 		}
 	},
-	models: [
-		{ name: modelName, schema: User, schemaOptions }
-	],
+	models: [User],
 	services: [XUserDefaultService, XUserUsersService],
 	publicRoutes: ['/x-user/users/validation/unique'],
 }

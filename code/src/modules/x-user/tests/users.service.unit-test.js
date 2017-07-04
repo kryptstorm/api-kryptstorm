@@ -9,7 +9,7 @@ import XDb from '../../../libs/x-db';
 import XService from '../../../libs/x-service';
 
 import { STATUS_ACTIVE } from '../models/user.model';
-import { getFakeUser } from './helpers';
+import { generateFakeUser } from './helpers';
 
 /** Services */
 import XUser from '..';
@@ -78,7 +78,7 @@ describe('XUser - users', function () {
 
 	it('Create data', function (done) {
 		const payload$ = {
-			attributes: _.assign({}, getFakeUser(), { password: '123456' })
+			attributes: generateFakeUser()
 		}
 		app.XService$.act('x_user:users, func:create', { payload$ })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
