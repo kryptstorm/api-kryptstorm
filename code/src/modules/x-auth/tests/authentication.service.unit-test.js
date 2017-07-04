@@ -13,7 +13,7 @@ import XAuth from '..';
 import XUser from '../../x-user';
 
 import { generateFakeUser } from '../../x-user/tests/helpers';
-import User, { STATUS_ACTIVE, PUBLIC_FIELDS } from '../../x-user/models/user.model';
+import User, { STATUS_ACTIVE, getPublicFields } from '../../x-user/models/user.model';
 
 const tablePrefix = 'kryptstorm';
 
@@ -41,7 +41,7 @@ describe('XAuth - authentication', function () {
 			const table = `${tablePrefix}_${User.name}`;
 			app.XDb$.model(table).truncate({ force: true })
 				.then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
-				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: PUBLIC_FIELDS }))
+				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: getPublicFields(false) }))
 				.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 					if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
 					validUser = {
@@ -60,7 +60,7 @@ describe('XAuth - authentication', function () {
 		const payload$ = {
 			attributes: _.assign(fakeUser, { confirmPassword: fakeUser.password })
 		}
-		
+
 		app.XService$.act('x_user:users, func:create', { payload$ })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 				expect(errorCode$).to.be.equal('ERROR_NONE');

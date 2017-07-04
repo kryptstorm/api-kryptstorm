@@ -143,7 +143,7 @@ export default function XDb({
 				if (!row) {
 					return done(null, { errorCode$: 'ERROR_ID_NOT_FOUND', message$: `The document with id [${id}] was not found.` });
 				}
-				return done(null, { data$: row.get({ plain: true }) });
+				return done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } });
 			})
 			.catch(_handleError.bind(this, done, returnFields));
 	});
@@ -165,7 +165,7 @@ export default function XDb({
 				if (!row) {
 					return done(null, { errorCode$: 'ERROR_DATA_NOT_FOUND', message$: `The document you retrieve was not found.` });
 				}
-				return done(null, { data$: row.get({ plain: true }) });
+				return done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } });
 			})
 			.catch(_handleError.bind(this, done, returnFields));
 	});
@@ -198,7 +198,7 @@ export default function XDb({
 				}
 				return row.update(attributes, { fields: saveFields });
 			})
-			.then(row => done(null, { data$: row.get({ plain: true }) }))
+			.then(row => done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } }))
 			.catch(_handleError.bind(this, done, saveFields));
 	});
 
@@ -226,7 +226,7 @@ export default function XDb({
 
 				return row.destroy();
 			})
-			.then(deletedRow => done(null, { data$: _.pick(deletedRow.get({ plain: true }), returnFields) }))
+			.then(deletedRow => done(null, { data$: _.pick(deletedRow.get({ plain: true }), returnFields), _meta$: { count: 1 } }))
 			.catch(_handleError.bind(this, done, []));
 	});
 

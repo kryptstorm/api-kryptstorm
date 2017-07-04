@@ -23,7 +23,8 @@ export const VALIDATION_TYPE_RECOVERY_PASSWORD = 2;
 export const VALIDATION_EXPIRY_TIME = Sequelize.fn('ADDDATE', Sequelize.fn('NOW'), 7);
 
 /** You should only return fields on this constant */
-export const PUBLIC_FIELDS = ['id', 'username', 'email', 'status', 'first_name', 'last_name', 'full_name'];
+export const PUBLIC_FIELDS = ['id', 'username', 'email', 'status', 'first_name', 'last_name'];
+export const getPublicFields = (onlyReal = true) => onlyReal ? PUBLIC_FIELDS : [...PUBLIC_FIELDS, 'full_name'];
 
 /** Model properties */
 export default {
