@@ -6,7 +6,7 @@ import Validator from 'validator';
 /** Internal modules */
 import User, {
 	STATUS_NEW, STATUS_ACTIVE,
-	generateValidationBaseOnStatus, getPublicFields
+	generateValidationBaseOnStatus, REAL_PUBLIC_FIELDS, VIRTUAL_PUBLIC_FILEDS
 } from '../models/user.model';
 
 /**
@@ -23,7 +23,7 @@ export default function XUserUsersService() {
 	this.add('x_user:users, func:create', function xUserUsersCreateUser({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { attributes = {} } = payload$;
-		attributes = _.pick(attributes, [...getPublicFields(), 'password']);
+		attributes = _.pick(attributes, [...REAL_PUBLIC_FIELDS, 'password']);
 		/**
 		 * Sequelize will validate any field exist on attribute,
 		 * not matter you set defaultValue or notEmpty or allowNull
@@ -49,7 +49,7 @@ export default function XUserUsersService() {
 			model: User.name,
 			attributes,
 			saveFields: attributes,
-			returnFields: getPublicFields(),
+			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
 		return act('x_db:create', dbPayload)
@@ -71,7 +71,7 @@ export default function XUserUsersService() {
 		let dbPayload = {
 			model: User.name,
 			id: Number(params.id),
-			returnFields: getPublicFields(),
+			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
 		return act('x_db:find_by_id', dbPayload)
@@ -91,8 +91,8 @@ export default function XUserUsersService() {
 		let { select = [], condition = {}, order = { id: 'DESC' }, pagination = {} } = payload$, where = {};
 
 		/** Prepare selected fields */
-		if (!_.isArray(select)) select = getPublicFields(false);
-		select = _.uniq(_.filter(select, field => _.includes(getPublicFields(false), field)));
+		if (!_.isArray(select)) select = [...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS];
+		select = _.uniq(_.filter(select, field => _.includes([...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS], field)));
 		const fullName = _.remove(select, field => field === 'full_name');
 		if (!_.isEmpty(fullName)) select.push([Sequelize.fn('CONCAT', Sequelize.col('first_name'), ' ', Sequelize.col('last_name')), 'full_name']);
 
@@ -101,7 +101,7 @@ export default function XUserUsersService() {
 		if (!_.isEmpty(condition)) {
 			/** Only allow filter by String or Number and must be value on PUBLIC_FIELDS  */
 			where = _.reduce(condition, (query, value, field) => {
-				if ((!_.isString(value) && !_.isNumber(value)) || _.includes(getPublicFields(false), field)) {
+				if ((!_.isString(value) && !_.isNumber(value)) || _.includes([...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS], field)) {
 					return query;
 				}
 
@@ -158,7 +158,7 @@ export default function XUserUsersService() {
 			id: Number(params.id),
 			attributes,
 			saveFields: _.keys(attributes),
-			returnFields: getPublicFields(),
+			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
 		return act('x_db:update', dbPayload)
@@ -180,7 +180,7 @@ export default function XUserUsersService() {
 		let dbPayload = {
 			model: User.name,
 			id: Number(params.id),
-			returnFields: getPublicFields(),
+			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
 		return act('x_db:delete_by_id', dbPayload)
