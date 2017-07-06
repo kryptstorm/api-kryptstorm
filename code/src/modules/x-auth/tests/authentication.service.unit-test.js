@@ -23,124 +23,124 @@ const models = [...XUser.models, ...XAuth.models];
 /** Seneca plugins */
 const services = [...XUser.services, ...XAuth.services];
 describe('XAuth - authentication', function () {
-	const TestApp = fn => {
-		const App = Seneca({
-			log: 'test'
-		})
-			.test(fn)
-			.use(XService)
-			.use(XDb, { models, tablePrefix, options: { logging: false } });
+  const TestApp = fn => {
+    const App = Seneca({
+      log: 'test'
+    })
+      .test(fn)
+      .use(XService)
+      .use(XDb, { models, tablePrefix, options: { logging: false } });
 
-		return _.reduce(services, (app, nextService) => app.use(nextService), App);
-	}
-	let app, validUser, token;
+    return _.reduce(services, (app, nextService) => app.use(nextService), App);
+  }
+  let app, validUser, token;
 
-	before((done) => {
-		app = _.reduce(services, (instance, nextService) => instance.use(nextService), TestApp(done));
-		app.ready(function () {
-			const table = `${tablePrefix}_${User.name}`;
-			app.XDb$.model(table).truncate({ force: true })
-				.then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
-				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: [...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS] }))
-				.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
-					if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
-					validUser = {
-						username: data$.username,
-						email: data$.email,
-						password: '123456',
-					}
-					return done();
-				})
-				.catch(err => done(err));
-		})
-	})
+  before((done) => {
+    app = TestApp(done);
+    app.ready(function () {
+      const table = `${tablePrefix}_${User.name}`;
+      app.XDb$.model(table).truncate({ force: true })
+        .then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
+        .then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: [...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS] }))
+        .then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+          if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
+          validUser = {
+            username: data$.username,
+            email: data$.email,
+            password: '123456',
+          }
+          return done();
+        })
+        .catch(err => done(err));
+    })
+  })
 
-	it('Register new user', function (done) {
-		const fakeUser = generateFakeUser();
-		const payload$ = {
-			attributes: _.assign(fakeUser, { confirmPassword: fakeUser.password })
-		}
+  it('Register new user', function (done) {
+    const fakeUser = generateFakeUser();
+    const payload$ = {
+      attributes: _.assign(fakeUser, { confirmPassword: fakeUser.password })
+    }
 
-		app.XService$.act('x_user:users, func:create', { payload$ })
-			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
-				expect(errorCode$).to.be.equal('ERROR_NONE');
+    app.XService$.act('x_user:users, func:create, scenario:register', { payload$ })
+      .then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+        expect(errorCode$).to.be.equal('ERROR_NONE');
 
-				expect(data$).to.be.an('object');
-				expect(data$.username).to.be.exist;
-				expect(data$.username).to.be.equal(payload$.attributes.username.toLowerCase());
-				expect(data$.email).to.be.equal(payload$.attributes.email.toLowerCase());
+        expect(data$).to.be.an('object');
+        expect(data$.username).to.be.exist;
+        expect(data$.username).to.be.equal(payload$.attributes.username.toLowerCase());
+        expect(data$.email).to.be.equal(payload$.attributes.email.toLowerCase());
 
-				return done();
-			})
-			.catch(err => done(err));
-	});
+        return done();
+      })
+      .catch(err => done(err));
+  });
 
-	it('Login by username', function (done) {
-		const payload$ = {
-			attributes: {
-				username: validUser.username,
-				password: validUser.password
-			}
-		}
+  it('Login by username', function (done) {
+    const payload$ = {
+      attributes: {
+        username: validUser.username,
+        password: validUser.password
+      }
+    }
 
-		app.XService$.act('x_auth:authentication, func:login', { payload$ })
-			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+    app.XService$.act('x_auth:authentication, func:login', { payload$ })
+      .then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
-				expect(errorCode$).to.be.equal('ERROR_NONE');
+        expect(errorCode$).to.be.equal('ERROR_NONE');
 
-				expect(data$).to.be.an('object');
-				expect(data$.token).to.be.exist;
-				expect(data$.token).to.be.an('string');
+        expect(data$).to.be.an('object');
+        expect(data$.token).to.be.exist;
+        expect(data$.token).to.be.an('string');
 
-				if (!token) token = data$.token;
+        if (!token) token = data$.token;
 
-				return done();
-			})
-			.catch(err => done(err));
-	});
+        return done();
+      })
+      .catch(err => done(err));
+  });
 
-	it('Login by email', function (done) {
-		const payload$ = {
-			attributes: {
-				email: validUser.email,
-				password: validUser.password
-			}
-		}
+  it('Login by email', function (done) {
+    const payload$ = {
+      attributes: {
+        email: validUser.email,
+        password: validUser.password
+      }
+    }
 
-		app.XService$.act('x_auth:authentication, func:login', { payload$ })
-			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+    app.XService$.act('x_auth:authentication, func:login', { payload$ })
+      .then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
-				expect(errorCode$).to.be.equal('ERROR_NONE');
+        expect(errorCode$).to.be.equal('ERROR_NONE');
 
-				expect(data$).to.be.an('object');
-				expect(data$.token).to.be.exist;
-				expect(data$.token).to.be.an('string');
+        expect(data$).to.be.an('object');
+        expect(data$.token).to.be.exist;
+        expect(data$.token).to.be.an('string');
 
-				if (!token) token = data$.token;
+        if (!token) token = data$.token;
 
-				return done();
-			})
-			.catch(err => done(err));
-	});
+        return done();
+      })
+      .catch(err => done(err));
+  });
 
-	it('Authentication by token', function (done) {
-		const payload$ = {
-			_meta: { XToken: token }
-		}
+  it('Authentication by token', function (done) {
+    const payload$ = {
+      _meta: { XToken: token }
+    }
 
-		app.XService$.act('x_auth:authentication, func:verify', { payload$ })
-			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
+    app.XService$.act('x_auth:authentication, func:verify', { payload$ })
+      .then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
-				expect(errorCode$).to.be.equal('ERROR_NONE');
+        expect(errorCode$).to.be.equal('ERROR_NONE');
 
-				expect(data$).to.be.an('object');
-				expect(data$.id).to.be.exist;
-				expect(data$.username).to.be.equal(validUser.username);
-				expect(data$.email).to.be.equal(validUser.email);
+        expect(data$).to.be.an('object');
+        expect(data$.id).to.be.exist;
+        expect(data$.username).to.be.equal(validUser.username);
+        expect(data$.email).to.be.equal(validUser.email);
 
-				return done();
-			})
-			.catch(err => done(err));
-	});
+        return done();
+      })
+      .catch(err => done(err));
+  });
 
 });

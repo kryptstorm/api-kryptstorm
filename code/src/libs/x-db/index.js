@@ -1,7 +1,10 @@
 /** External modules */
-import Sequelize, { ValidationError } from 'sequelize';
+import Sequelize from 'sequelize';
 import Config from 'config';
 import _ from 'lodash';
+
+/** Internal modules */
+import { xMariadbErrorHandler, xMariadbModelValidate, xMariadbResolvePagination, xMariadbResolveReturnFields } from './helpers';
 
 const defaultOptions = {
 	host: Config.get('db.connect.host'),
@@ -31,11 +34,11 @@ export default function XDb({
 
 	this.add('init:XDb', function XDbInit(args, done) {
 		if (_.isEmpty(models)) {
-			return _handleError.call(null, done, [], new Error('You init an API without models. You\'ll dont\'t want do it.'));
+			return xMariadbErrorHandler.call(null, done, [], new Error('You init an API without models. You\'ll dont\'t want do it.'));
 		}
 
 		if (!_.isArray(models)) {
-			return _handleError.call(null, done, [], new Error('You must give XDb array of models.'));
+			return xMariadbErrorHandler.call(null, done, [], new Error('You must give XDb array of models.'));
 		}
 
 		_.each(models, ({ name = '', schema = {}, schemaOptions = {} }) => {
@@ -63,18 +66,18 @@ export default function XDb({
 		return db
 			.authenticate()
 			.then(() => done())
-			.catch(_handleError.bind(this, done, []));
+			.catch(xMariadbErrorHandler.bind(this, done, []));
 	});
 
 	this.add('x_db:create', function XDbCreate({ model, attributes, saveFields, returnFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
 		if (!_.isObject(attributes) || _.isEmpty(attributes)) {
-			return _handleError.call(null, done, [], new Error('You can not create item without attributes.'));
+			return xMariadbErrorHandler.call(null, done, [], new Error('You can not create item without attributes.'));
 		}
 
 		if (!_.isArray(saveFields) || _.isEmpty(saveFields)) {
@@ -82,27 +85,18 @@ export default function XDb({
 		}
 
 		return db
-			.model(modelAfterValidate)
+			.model(_model)
 			.create(attributes, { fields: saveFields })
-			.then(row => {
-				/** If params don't have returnFields, only return id */
-				returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
-				returnFields = _.uniq(returnFields);
-				return done(null, { data$: _.pick(row.get({ plain: true }), returnFields), _meta$: { count: 1 } });
-			})
-			.catch(_handleError.bind(this, done, saveFields));
+			.then(row => done(null, { data$: _.pick(row.get({ plain: true }), xMariadbResolveReturnFields(returnFields)), _meta$: { count: 1 } }))
+			.catch(xMariadbErrorHandler.bind(this, done, saveFields));
 	});
 
 	this.add('x_db:find_all', function XDbFind({ model, where, order, pagination, returnFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
-
-		/** If params don't have returnFields, only return id */
-		returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
-		returnFields = _.uniq(returnFields);
 
 		/** Ger ordering */
 		order = (!_.isObject(order) || _.isEmpty(order)) ? { id: 'DESC' } : order;
@@ -113,68 +107,62 @@ export default function XDb({
 			return false;
 		});
 
-		let query = _.assign({}, { where, attributes: returnFields, order, raw: true }, _preparePagination(pagination));
+		let query = _.assign({}, { where, attributes: xMariadbResolveReturnFields(returnFields), order, raw: true }, xMariadbResolvePagination(pagination));
 
 		return db
-			.model(modelAfterValidate)
+			.model(_model)
 			.findAndCountAll(query)
 			.then(({ count, rows }) => done(null, { data$: rows, _meta$: { count } }))
-			.catch(_handleError.bind(this, done, returnFields));
+			.catch(xMariadbErrorHandler.bind(this, done, returnFields));
 	});
 
 	this.add('x_db:find_by_id', function XDbFindById({ model, id, returnFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
 		if (!id || !_.isNumber(id)) {
 			return done(null, { errorCode$: 'ERROR_INVALID_ID', message$: `Id must be integer and can not be blank. You gave [${JSON.stringify(id)}].` });
 		}
 
-		returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
-		returnFields = _.uniq(returnFields);
-
 		return db
-			.model(modelAfterValidate)
-			.findById(id, { attributes: returnFields })
+			.model(_model)
+			.findById(id, { attributes: xMariadbResolveReturnFields(returnFields) })
 			.then(row => {
 				if (!row) {
 					return done(null, { errorCode$: 'ERROR_ID_NOT_FOUND', message$: `The document with id [${id}] was not found.` });
 				}
 				return done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } });
 			})
-			.catch(_handleError.bind(this, done, returnFields));
+			.catch(xMariadbErrorHandler.bind(this, done, xMariadbResolveReturnFields(returnFields)));
 	});
 
 	this.add('x_db:find_one', function XDbFindById({ model, where, returnFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
-		returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
-		returnFields = _.uniq(returnFields);
-
 		return db
-			.model(modelAfterValidate)
-			.findOne({ where }, { attributes: returnFields })
+			.model(_model)
+			.findOne({ where }, { attributes: xMariadbResolveReturnFields(returnFields) })
 			.then(row => {
 				if (!row) {
 					return done(null, { errorCode$: 'ERROR_DATA_NOT_FOUND', message$: `The document you retrieve was not found.` });
 				}
 				return done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } });
 			})
-			.catch(_handleError.bind(this, done, returnFields));
+			.catch(xMariadbErrorHandler.bind(this, done, xMariadbResolveReturnFields(returnFields)));
 	});
 
-	this.add('x_db:update', function XDbUpdate({ model, id, attributes, saveFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+	this.add('x_db:update', function XDbUpdate({ model, id, attributes, saveFields, returnFields }, done) {
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
 		if (!id || !_.isNumber(id)) {
@@ -182,7 +170,7 @@ export default function XDb({
 		}
 
 		if (!_.isObject(attributes) || _.isEmpty(attributes)) {
-			return _handleError.call(null, done, [], new Error('You can not update item without attributes.'));
+			return xMariadbErrorHandler.call(null, done, [], new Error('You can not update item without attributes.'));
 		}
 
 		if (!_.isArray(saveFields) || _.isEmpty(saveFields)) {
@@ -190,7 +178,7 @@ export default function XDb({
 		}
 
 		return db
-			.model(modelAfterValidate)
+			.model(_model)
 			.findById(id)
 			.then(row => {
 				if (!row) {
@@ -198,26 +186,23 @@ export default function XDb({
 				}
 				return row.update(attributes, { fields: saveFields });
 			})
-			.then(row => done(null, { data$: row.get({ plain: true }), _meta$: { count: 1 } }))
-			.catch(_handleError.bind(this, done, saveFields));
+			.then(row => done(null, { data$: _.pick(row.get({ plain: true }), xMariadbResolveReturnFields(returnFields)), _meta$: { count: 1 } }))
+			.catch(xMariadbErrorHandler.bind(this, done, saveFields));
 	});
 
 	this.add('x_db:delete_by_id', function XDbDeleteById({ model, id, returnFields }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
 		if (!id || !_.isNumber(id)) {
 			return done(null, { errorCode$: 'ERROR_INVALID_ID', message$: `Id must be integer and can not be blank. You gave [${JSON.stringify(id)}].` });
 		}
 
-		returnFields = (_.isEmpty(returnFields) || !_.isArray(returnFields)) ? ['id'] : returnFields;
-		returnFields = _.uniq(returnFields);
-
 		return db
-			.model(modelAfterValidate)
+			.model(_model)
 			.findById(id)
 			.then(row => {
 				if (!row) {
@@ -226,15 +211,15 @@ export default function XDb({
 
 				return row.destroy();
 			})
-			.then(deletedRow => done(null, { data$: _.pick(deletedRow.get({ plain: true }), returnFields), _meta$: { count: 1 } }))
-			.catch(_handleError.bind(this, done, []));
+			.then(deletedRow => done(null, { data$: _.pick(deletedRow.get({ plain: true }), xMariadbResolveReturnFields(returnFields)), _meta$: { count: 1 } }))
+			.catch(xMariadbErrorHandler.bind(this, done, []));
 	});
 
 	this.add('x_db:validate, scenario:unique', function XDbvalidateUnique({ model, field = '', value = '' }, done) {
-		const modelAfterValidate = _modelValidate.call(null, model, db, tablePrefix);
-		/** Now after validate, modelAfterValidate is instance of error */
-		if (!_.isString(modelAfterValidate)) {
-			return _handleError.call(null, done, [], modelAfterValidate);
+		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
+		/** Now after validate, _model is instance of error */
+		if (!_.isString(_model)) {
+			return xMariadbErrorHandler.call(null, done, [], _model);
 		}
 
 		if (!field || !_.isString(field)) {
@@ -248,7 +233,7 @@ export default function XDb({
 		const data$ = { [field]: value };
 
 		return db
-			.model(modelAfterValidate)
+			.model(_model)
 			.findOne({
 				where: data$,
 				attributes: [field],
@@ -262,54 +247,8 @@ export default function XDb({
 
 				return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: `Validation was failed.`, errors$: { [field]: `This [${field}] with value {${value}} has already been taken.` } });
 			})
-			.catch(_handleError.bind(this, done, [[field]]));
+			.catch(xMariadbErrorHandler.bind(this, done, [[field]]));
 	});
 
 	return { name: 'XDb' };
-}
-
-function _preparePagination(pagination) {
-	if (!_.isObject(pagination) || _.isEmpty(pagination)) {
-		return { offset: 0, limit: Config.get('api.perPageLimit') };
-	}
-
-	let { offset, limit } = pagination
-	offset = (_.isNumber(offset) && offset > -1) ? offset : 0;
-	limit = (_.isNumber(limit) && limit > 0) ? limit : Config.get('api.perPageLimit');
-	return { offset, limit };
-}
-
-function _modelValidate(model, db, tablePrefix) {
-	if (!model || !_.isString(model)) {
-		return new Error(`Params "model" must be string and can not be blank. You gave [${JSON.stringify(model)}]`)
-	}
-
-	const modelName = `${tablePrefix}_${model}`;
-	if (!db.isDefined(modelName)) {
-		return new Error(`Model [${model}] was not register.`);
-	}
-
-	return modelName;
-}
-
-function _handleError(done, returnErrorFields = [], _catch) {
-	/** You should catch validation error at here */
-	if (_catch instanceof ValidationError) {
-		const { errors } = _catch;
-		let errors$ = {};
-
-		if (_.isArray(returnErrorFields)) {
-			if (_.isArray(errors) && !_.isEmpty(errors)) {
-				_.each(errors, ({ message, path }) => {
-					if (_.includes(returnErrorFields, path)) {
-						errors$[path] = message;
-					}
-				});
-			}
-		}
-
-		return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: `Validation was failed.`, errors$ });
-	}
-
-	return done(null, { errorCode$: 'ERROR_SYSTEM', _catch });
 }

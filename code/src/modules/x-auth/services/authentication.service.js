@@ -22,7 +22,7 @@ export default function XAuthAuthenticationService() {
 	});
 
 	/** Overwrite create function with register */
-	this.add('x_user:users, func:create', function xAuthAuthenticationRegister(args, done) {
+	this.add('x_user:users, func:create, scenario:register', function xAuthAuthenticationRegister(args, done) {
 		let { payload$ = {} } = args;
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { attributes = {} } = payload$;

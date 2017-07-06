@@ -7,7 +7,7 @@ import {
 	generateValidationBaseOnStatus
 } from '../models/user.model';
 
-export const generateFakeUser = (attributes = {}) => {
+export const generateFakeUser = (attributes = {}, pick = []) => {
 	attributes = _.assign({
 		username: Faker.internet.userName().toLowerCase(),
 		email: Faker.internet.email().toLowerCase(),
@@ -16,8 +16,8 @@ export const generateFakeUser = (attributes = {}) => {
 		last_name: Faker.name.lastName(),
 		created_at: Faker.date.past(),
 		password: '123456'
-	}, attributes)
-	
+	}, attributes);
+
 	_.assign(attributes, generateValidationBaseOnStatus(attributes.status));
 	if (attributes.status === STATUS_ACTIVE) {
 		attributes.updated_at = Faker.date.recent();
@@ -26,6 +26,10 @@ export const generateFakeUser = (attributes = {}) => {
 		attributes.updated_at = Faker.date.recent();
 	}
 
+	if (!_.isEmpty(pick) && _.isArray(pick)) {
+		attributes = _.pick(attributes, pick)
+	}
+	
 	return attributes;
 }
 

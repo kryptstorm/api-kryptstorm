@@ -8,7 +8,7 @@ import { expect } from 'chai';
 import XDb from '../../../libs/x-db';
 import XService from '../../../libs/x-service';
 
-import User, { STATUS_ACTIVE, PUBLIC_FIELDS } from '../models/user.model';
+import User, { STATUS_ACTIVE, REAL_PUBLIC_FIELDS } from '../models/user.model';
 import { generateFakeUser } from './helpers';
 
 /** Services */
@@ -41,7 +41,7 @@ describe('XUser - users', function () {
 			const table = `${tablePrefix}_${User.name}`;
 			app.XDb$.model(table).truncate({ force: true })
 				.then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
-				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: PUBLIC_FIELDS }))
+				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: REAL_PUBLIC_FIELDS }))
 				.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 					if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
 					validUser = {
@@ -131,5 +131,84 @@ describe('XUser - users', function () {
 			.catch(err => done(err));
 	});
 
+	it('Update user by id', function (done) {
+		const payload$ = {
+			params: {
+				id: validUser.id,
+			},
+			attributes: generateFakeUser({}, ['first_name', 'last_name'])
+		}
 
+		app.XService$.act('x_user:users, func:update_by_id', { payload$ })
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
+
+				expect(data$).to.be.an('object');
+				expect(data$.id).to.be.equal(payload$.params.id);
+				expect(data$.first_name).to.be.equal(payload$.attributes.first_name);
+				expect(data$.last_name).to.be.equal(payload$.attributes.last_name);
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
+	});
+
+	it('Delete user by id', function (done) {
+		const payload$ = {
+			params: {
+				id: validUser.id
+			}
+		}
+
+		app.XService$.act('x_user:users, func:delete_by_id', { payload$ })
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
+
+				expect(data$).to.be.an('object');
+				expect(data$.id).to.be.equal(validUser.id);
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
+	});
+
+	it('Validate unique username', function (done) {
+		const payload$ = {
+			attributes: {
+				field: 'username',
+				value: validUser.username
+			}
+		}
+
+		app.XService$.act('x_user:users, validate:unique', { payload$ })
+			.then(({ errorCode$ = 'ERROR_NONE' }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_VALIDATION_FAILED');
+				return done();
+			})
+			.catch(err => done(err));
+	});
+
+	it('Validate unique email', function (done) {
+		const payload$ = {
+			attributes: {
+				field: 'email',
+				value: validUser.email
+			}
+		}
+
+		app.XService$.act('x_user:users, validate:unique', { payload$ })
+			.then(({ errorCode$ = 'ERROR_NONE' }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_VALIDATION_FAILED');
+				return done();
+			})
+			.catch(err => done(err));
+	});
 });
