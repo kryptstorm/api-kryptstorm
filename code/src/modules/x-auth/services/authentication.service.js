@@ -71,7 +71,7 @@ export default function XAuthAuthenticationService() {
 			where.$or.email = email;
 		}
 
-		return act('x_db:find_one', { model: User.name, where, returnFields: ['id', 'username', 'email', 'password'] })
+		return act('x_mariadb:find_one', { model: User.name, where, returnFields: ['id', 'username', 'email', 'password'] })
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 				if (errorCode$ !== 'ERROR_NONE') return done(null, loginFailed);
 				return Bcrypt.compare(password, data$.password)
@@ -97,7 +97,7 @@ export default function XAuthAuthenticationService() {
 			.then(({ id, username, email }) => {
 				if (!id) return done(null, verifyFailed);
 
-				return act('x_db:find_by_id', { model: User.name, id: Number(id), returnFields: ['id', 'username', 'email'] })
+				return act('x_mariadb:find_by_id', { model: User.name, id: Number(id), returnFields: ['id', 'username', 'email'] })
 					.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 						if (errorCode$ !== 'ERROR_NONE' || username !== data$.username || email !== data$.email) return done(null, verifyFailed);
 

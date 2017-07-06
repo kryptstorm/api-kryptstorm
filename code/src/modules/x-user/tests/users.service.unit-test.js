@@ -5,7 +5,7 @@ import { expect } from 'chai';
 
 /** Internal modules */
 /** Kryptstorm system modules*/
-import XDb from '../../../libs/x-db';
+import XMariadb from '../../../libs/x-mariadb';
 import XService from '../../../libs/x-service';
 
 import User, { STATUS_ACTIVE, REAL_PUBLIC_FIELDS } from '../models/user.model';
@@ -29,7 +29,7 @@ describe('XUser - users', function () {
 		})
 			.test(fn)
 			.use(XService)
-			.use(XDb, { models, tablePrefix, options: { logging: false } });
+			.use(XMariadb, { models, tablePrefix, options: { logging: false } });
 
 		return _.reduce(services, (app, nextService) => app.use(nextService), App);
 	}
@@ -39,9 +39,9 @@ describe('XUser - users', function () {
 		app = _.reduce(services, (instance, nextService) => instance.use(nextService), TestApp(done));
 		app.ready(function () {
 			const table = `${tablePrefix}_${User.name}`;
-			app.XDb$.model(table).truncate({ force: true })
-				.then(() => app.XDb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
-				.then(() => app.XService$.act('x_db:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: REAL_PUBLIC_FIELDS }))
+			app.XMariadb$.model(table).truncate({ force: true })
+				.then(() => app.XMariadb$.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`))
+				.then(() => app.XService$.act('x_mariadb:create', { model: User.name, attributes: generateFakeUser({ status: STATUS_ACTIVE }), returnFields: REAL_PUBLIC_FIELDS }))
 				.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 					if (errorCode$ !== 'ERROR_NONE') return done(new Error('Can not prepare data for unit test.'));
 					validUser = {

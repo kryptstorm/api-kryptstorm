@@ -14,7 +14,7 @@ const defaultOptions = {
 	logging: Config.get('api.isDebug') ? console.log : false,
 }
 
-export default function XDb({
+export default function XMariadb({
   models = [],
 	tablePrefix = Config.get('db.prefix'),
 	database = Config.get('db.connect.database'),
@@ -30,25 +30,25 @@ export default function XDb({
 	const db = new Sequelize(database, username, password, options);
 
 	/** Inject db instance to Seneca, this will help you use sequelizejs if this plugin was not enough for you */
-	this.decorate('XDb$', db);
+	this.decorate('XMariadb$', db);
 
-	this.add('init:XDb', function XDbInit(args, done) {
+	this.add('init:XMariadb', function XMariadbInit(args, done) {
 		if (_.isEmpty(models)) {
 			return xMariadbErrorHandler.call(null, done, [], new Error('You init an API without models. You\'ll dont\'t want do it.'));
 		}
 
 		if (!_.isArray(models)) {
-			return xMariadbErrorHandler.call(null, done, [], new Error('You must give XDb array of models.'));
+			return xMariadbErrorHandler.call(null, done, [], new Error('You must give XMariadb array of models.'));
 		}
 
 		_.each(models, ({ name = '', schema = {}, schemaOptions = {} }) => {
 			if (!name || !_.isString(name)) {
-				console.log('ERROR-XDb: Name of model was empty or was not String.');
+				console.log('ERROR-XMariadb: Name of model was empty or was not String.');
 				return false;
 			}
 
 			if (_.isEmpty(schema) || !_.isObject(schema)) {
-				console.log(`ERROR-XDb: Schema of model [${name}] was not defined.`);
+				console.log(`ERROR-XMariadb: Schema of model [${name}] was not defined.`);
 				return false;
 			}
 
@@ -69,7 +69,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, []));
 	});
 
-	this.add('x_db:create', function XDbCreate({ model, attributes, saveFields, returnFields }, done) {
+	this.add('x_mariadb:create', function XMariadbCreate({ model, attributes, saveFields, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -91,7 +91,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, saveFields));
 	});
 
-	this.add('x_db:find_all', function XDbFind({ model, where, order, pagination, returnFields }, done) {
+	this.add('x_mariadb:find_all', function XMariadbFind({ model, where, order, pagination, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -116,7 +116,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, returnFields));
 	});
 
-	this.add('x_db:find_by_id', function XDbFindById({ model, id, returnFields }, done) {
+	this.add('x_mariadb:find_by_id', function XMariadbFindById({ model, id, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -139,7 +139,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, xMariadbResolveReturnFields(returnFields)));
 	});
 
-	this.add('x_db:find_one', function XDbFindById({ model, where, returnFields }, done) {
+	this.add('x_mariadb:find_one', function XMariadbFindById({ model, where, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -158,7 +158,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, xMariadbResolveReturnFields(returnFields)));
 	});
 
-	this.add('x_db:update', function XDbUpdate({ model, id, attributes, saveFields, returnFields }, done) {
+	this.add('x_mariadb:update', function XMariadbUpdate({ model, id, attributes, saveFields, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -190,7 +190,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, saveFields));
 	});
 
-	this.add('x_db:delete_by_id', function XDbDeleteById({ model, id, returnFields }, done) {
+	this.add('x_mariadb:delete_by_id', function XMariadbDeleteById({ model, id, returnFields }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -215,7 +215,7 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, []));
 	});
 
-	this.add('x_db:validate, scenario:unique', function XDbvalidateUnique({ model, field = '', value = '' }, done) {
+	this.add('x_mariadb:validate, scenario:unique', function XMariadbvalidateUnique({ model, field = '', value = '' }, done) {
 		const _model = xMariadbModelValidate.call(null, model, db, tablePrefix);
 		/** Now after validate, _model is instance of error */
 		if (!_.isString(_model)) {
@@ -250,5 +250,5 @@ export default function XDb({
 			.catch(xMariadbErrorHandler.bind(this, done, [[field]]));
 	});
 
-	return { name: 'XDb' };
+	return { name: 'XMariadb' };
 }

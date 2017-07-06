@@ -5,7 +5,7 @@ import _ from 'lodash';
 
 /** Internal modules */
 /** Kryptstorm system modules*/
-import XDb from './libs/x-db';
+import XMariadb from './libs/x-mariadb';
 import XService from './libs/x-service';
 import XWeb from './libs/x-web';
 
@@ -37,7 +37,7 @@ const App = Seneca(options);
 
 /** Register System service to handle application */
 App.use(XService);
-App.use(XDb, { models, tablePrefix: 'kryptstorm' });
+App.use(XMariadb, { models, tablePrefix: 'kryptstorm' });
 App.use(XWeb, { authentication: 'x_auth:authentication, func:verify', publicRoutes });
 
 _.reduce(services, (app, nextService) => app.use(nextService), App)

@@ -52,7 +52,7 @@ export default function XUserUsersService() {
 			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
-		return act('x_db:create', dbPayload)
+		return act('x_mariadb:create', dbPayload)
 			.then(({ errorCode$ = 'ERROR_NONE', data$ = {}, _meta$ = {}, errors$ = {} }) => {
 				if (errorCode$ !== 'ERROR_NONE') {
 					return done(null, { errorCode$, message$: 'Can not create user. Please try again.', errors$ })
@@ -74,7 +74,7 @@ export default function XUserUsersService() {
 			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
-		return act('x_db:find_by_id', dbPayload)
+		return act('x_mariadb:find_by_id', dbPayload)
 			.then(({ errorCode$ = 'ERROR_NONE', data$ = {}, _meta$ = {}, errors$ = {} }) => {
 				if (errorCode$ !== 'ERROR_NONE') {
 					return done(null, { errorCode$, message$: 'User was not found. Please try again.', errors$ })
@@ -131,7 +131,7 @@ export default function XUserUsersService() {
 			order
 		};
 
-		return act('x_db:find_all', dbPayload)
+		return act('x_mariadb:find_all', dbPayload)
 			.then(done.bind(this, null))
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
@@ -161,7 +161,7 @@ export default function XUserUsersService() {
 			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
-		return act('x_db:update', dbPayload)
+		return act('x_mariadb:update', dbPayload)
 			.then(({ errorCode$ = 'ERROR_NONE', data$ = {}, _meta$ = {}, errors$ = {} }) => {
 				if (errorCode$ !== 'ERROR_NONE') {
 					return done(null, { errorCode$, message$: 'Can not update user. Please try again.', errors$ })
@@ -183,7 +183,7 @@ export default function XUserUsersService() {
 			returnFields: REAL_PUBLIC_FIELDS,
 		};
 
-		return act('x_db:delete_by_id', dbPayload)
+		return act('x_mariadb:delete_by_id', dbPayload)
 			.then(({ errorCode$ = 'ERROR_NONE', data$ = {}, _meta$ = {}, errors$ = {} }) => {
 				if (errorCode$ !== 'ERROR_NONE') {
 					return done(null, { errorCode$, message$: 'Can not update user. Please try again.', errors$ })
@@ -205,7 +205,7 @@ export default function XUserUsersService() {
 			return done(null, { errorCode$: 'ERROR_INVALID_VALIDATION_FIELD', message$: `Validattion field is not allowed. You gave [${JSON.stringify(field)}].` });
 		}
 
-		return act('x_db:validate, scenario:unique', { model: User.name, field, value, })
+		return act('x_mariadb:validate, scenario:unique', { model: User.name, field, value, })
 			.then(done.bind(this, null))
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});

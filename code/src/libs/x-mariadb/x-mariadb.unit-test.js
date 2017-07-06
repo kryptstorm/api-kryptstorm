@@ -8,7 +8,7 @@ import Bluebird from 'bluebird';
 /** Internal modules */
 import XDb from '.';
 
-const testTable = 'test_x_db';
+const testTable = 'test_x_mariadb';
 
 const models = [
 	{
@@ -52,7 +52,7 @@ const models = [
 ]
 
 
-describe('XDb', function () {
+describe('XMariadb', function () {
 	const TestApp = fn => {
 		return Seneca({
 			log: 'test'
@@ -67,7 +67,7 @@ describe('XDb', function () {
 		act = Bluebird.promisify(app.act, { context: app });
 
 		app.ready(function () {
-			db = this.XDb$;
+			db = this.XMariadb$;
 			return done();
 		})
 	})
@@ -83,7 +83,7 @@ describe('XDb', function () {
 			},
 			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		act('x_db:create', payload$)
+		act('x_mariadb:create', payload$)
 			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_NONE');
@@ -103,7 +103,7 @@ describe('XDb', function () {
 			model: testTable,
 			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		act('x_db:find_all', payload$)
+		act('x_mariadb:find_all', payload$)
 			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_NONE');
@@ -124,7 +124,7 @@ describe('XDb', function () {
 			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
 
-		act('x_db:find_by_id', payload$)
+		act('x_mariadb:find_by_id', payload$)
 			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_NONE');
@@ -149,7 +149,7 @@ describe('XDb', function () {
 			},
 			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		act('x_db:update', payload$)
+		act('x_mariadb:update', payload$)
 			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_NONE');
@@ -172,7 +172,7 @@ describe('XDb', function () {
 			id: row.id,
 			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		act('x_db:delete_by_id', data)
+		act('x_mariadb:delete_by_id', data)
 			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_NONE');
@@ -194,7 +194,7 @@ describe('XDb', function () {
 			value: row.username
 		}
 
-		act('x_db:validate, scenario:unique', data)
+		act('x_mariadb:validate, scenario:unique', data)
 			.then(({ errorCode$ = 'ERROR_NONE' }) => {
 
 				expect(errorCode$).to.be.equal('ERROR_VALIDATION_FAILED');
