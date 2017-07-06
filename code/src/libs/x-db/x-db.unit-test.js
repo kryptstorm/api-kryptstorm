@@ -3,7 +3,7 @@ import Seneca from 'seneca';
 import Sequelize from 'sequelize';
 import { expect } from 'chai';
 import Faker from 'faker';
-import _ from 'lodash';
+import Bluebird from 'bluebird';
 
 /** Internal modules */
 import XDb from '.';
@@ -12,7 +12,8 @@ const testTable = 'test_x_db';
 
 const models = [
 	{
-		name: testTable, schema: {
+		name: testTable,
+		schema: {
 			username: {
 				type: Sequelize.STRING(128),
 				unique: true,
@@ -50,6 +51,7 @@ const models = [
 	}
 ]
 
+
 describe('XDb', function () {
 	const TestApp = fn => {
 		return Seneca({
@@ -58,10 +60,12 @@ describe('XDb', function () {
 			.test(fn)
 			.use(XDb, { models, options: { logging: false } })
 	}
-	let db, app, rowId;
+	let act, db, app, row;
 
 	before((done) => {
 		app = TestApp(done);
+		act = Bluebird.promisify(app.act, { context: app });
+
 		app.ready(function () {
 			db = this.XDb$;
 			return done();
@@ -69,99 +73,134 @@ describe('XDb', function () {
 	})
 
 	it('Insert data', function (done) {
-		const data = {
+		const payload$ = {
 			model: testTable,
 			attributes: {
 				username: Faker.internet.userName(),
 				email: Faker.internet.email(),
 				first_name: Faker.name.findName(),
 				last_name: Faker.name.lastName(),
-			}
+			},
+			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		app.act('x_db:create', data, function (err, result = {}) {
-			const { data$ } = result;
+		act('x_db:create', payload$)
+			.then(({ errorCode$ = 'ERROR_NONE', data$ }) => {
 
-			expect(err).to.be.not.exist;
-			expect(data$).to.be.an('object');
-			expect(data$.id).to.be.an('number');
-			expect(data$.username).to.equal(data.attributes.username);
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
-			rowId = data$.id;
-			return done();
-		})
+				expect(data$).to.be.an('object');
+				expect(data$.username).to.be.exist;
+				expect(data$.username).to.be.equal(payload$.attributes.username);
+
+				row = data$;
+				return done();
+			})
+			.catch(err => done(err));
 	});
 
 	it('Find all data', function (done) {
-		const data = {
+		const payload$ = {
 			model: testTable,
+			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		app.act('x_db:find_all', data, function (err, result = {}) {
-			const { data$, _meta$ } = result;
+		act('x_db:find_all', payload$)
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
-			expect(err).to.be.not.exist;
-			expect(data$).to.be.an('array');
-			expect(data$.length).to.equal(1);
-			expect(_meta$).to.be.exist;
-			expect(_meta$.count).to.be.exist;
-			expect(_meta$.count).to.equal(1);
-			return done();
-		})
+				expect(errorCode$).to.be.equal('ERROR_NONE');
+
+				expect(data$).to.be.an('array');
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
 	});
 
 	it('Find data by id', function (done) {
-		const data = {
+		const payload$ = {
 			model: testTable,
-			id: rowId
+			id: row.id,
+			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		app.act('x_db:find_by_id', data, function (err, result = {}) {
-			const { data$ } = result;
 
-			expect(err).to.be.not.exist;
-			expect(data$).to.be.an('object');
-			expect(data$.id).to.be.an('number');
-			expect(data$.id).to.equal(rowId);
-			expect(_.size(data$)).to.equal(1);
-			return done();
-		})
+		act('x_db:find_by_id', payload$)
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_NONE');
+
+				expect(data$).to.be.an('object');
+				expect(data$.id).to.be.equal(row.id);
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
 	});
 
 	it('Update data by id', function (done) {
-		const data = {
+		const payload$ = {
 			model: testTable,
-			id: rowId,
+			id: row.id,
 			attributes: {
-				username: Faker.internet.userName(),
-			}
+				first_name: Faker.name.firstName(),
+				last_name: Faker.name.lastName(),
+			},
+			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		app.act('x_db:update', data, function (err, result = {}) {
-			const { data$ } = result;
+		act('x_db:update', payload$)
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
-			expect(err).to.be.not.exist;
-			expect(data$).to.be.an('object');
-			expect(data$.id).to.be.an('number');
-			expect(data$.id).to.equal(data.id);
-			expect(data$.username).to.equal(data.attributes.username);
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
-			rowId = data$.id;
-			return done();
-		})
+				expect(data$).to.be.an('object');
+				expect(data$.id).to.be.equal(payload$.id);
+				expect(data$.first_name).to.be.equal(payload$.attributes.first_name);
+				expect(data$.last_name).to.be.equal(payload$.attributes.last_name);
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
 	});
 
 	it('Delete data by id', function (done) {
 		const data = {
 			model: testTable,
-			id: rowId,
+			id: row.id,
+			returnFields: ['id', 'username', 'email', 'first_name', 'last_name']
 		}
-		app.act('x_db:delete_by_id', data, function (err, result = {}) {
-			const { data$ } = result;
+		act('x_db:delete_by_id', data)
+			.then(({ errorCode$ = 'ERROR_NONE', data$, _meta$ }) => {
 
-			expect(err).to.be.not.exist;
-			expect(data$).to.be.an('number');
-			expect(data$).to.equal(rowId);
+				expect(errorCode$).to.be.equal('ERROR_NONE');
 
-			rowId = data$.id;
-			return done();
-		})
+				expect(data$).to.be.an('object');
+				expect(data$.id).to.be.equal(row.id);
+				expect(_meta$).to.be.exist;
+				expect(_meta$.count).to.be.exist;
+				expect(_meta$.count).to.be.an('number');
+				return done();
+			})
+			.catch(err => done(err));
+	});
+
+	it('Validate unique', function (done) {
+		const data = {
+			model: testTable,
+			field: 'username',
+			value: row.username
+		}
+
+		act('x_db:validate, scenario:unique', data)
+			.then(({ errorCode$ = 'ERROR_NONE' }) => {
+
+				expect(errorCode$).to.be.equal('ERROR_VALIDATION_FAILED');
+				return done();
+			})
+			.catch(err => done(err));
 	});
 
 	after(function afterTestXDb(done) {
