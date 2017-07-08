@@ -90,7 +90,9 @@ export default function UserService() {
 
 		/** Prepare selected fields */
 		if (!_.isArray(select)) select = [...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS];
+		/** Only allow select public field */
 		select = _.uniq(_.filter(select, field => _.includes([...REAL_PUBLIC_FIELDS, ...VIRTUAL_PUBLIC_FILEDS], field)));
+		/** Get virtual field */
 		const fullName = _.remove(select, field => field === 'full_name');
 		if (!_.isEmpty(fullName)) select.push([Sequelize.fn('CONCAT', Sequelize.col('first_name'), ' ', Sequelize.col('last_name')), 'full_name']);
 

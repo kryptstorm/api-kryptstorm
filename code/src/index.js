@@ -46,11 +46,15 @@ const App = Seneca(options);
 /** Register System service to handle application */
 App.use(XService);
 App.use(XMariadb, { models, tablePrefix: 'kryptstorm' });
-App.use(XWeb, { authentication: 'x_auth:authentication, func:verify', publicRoutes });
+App.use(XWeb, {
+	auth: { authentication: 'x_auth:authentication, func:verify', publicRoutes },
+	routes,
+	isDebug: Config.get('api.isDebug')
+});
 
 _.reduce(services, (app, nextService) => app.use(nextService), App)
 	/** Only handle http/socketio after all plugin was ready. */
 	.ready(() => {
-		const server = App.export('XWeb/server')(routes, Config.get('api.isDebug'));
+		const server = App.export('XWeb/server');
 		return server.listen(HTTPPort, () => console.log(`XWeb was running on http://localhost:${HTTPPort}`));
 	});
