@@ -18,7 +18,7 @@
     "start-dev": "NODE_ENV=development NODE_CONFIG_DIR=/code/src/config/ ./node_modules/.bin/nodemon src/index.js --exec babel-node",
     "lint": "./node_modules/.bin/eslint ./src/",
     "pretest": "npm run lint",
-    "test": "find ./src/modules -name '*.unit-test.js' | xargs npm run --silent exec-test",
+    "test": "find ./src/modules -name '*test.js' | xargs npm run --silent exec-test",
     "sequelize": "NODE_ENV=development NODE_CONFIG_DIR=/code/src/config/ ./node_modules/.bin/sequelize",
     "exec-file": "NODE_ENV=development NODE_CONFIG_DIR=/code/src/config/ ./node_modules/.bin/babel-node",
     "exec-test": "NODE_ENV=development NODE_CONFIG_DIR=/code/src/config/ ./node_modules/.bin/mocha --compilers js:babel-core/register"

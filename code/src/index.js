@@ -3,30 +3,38 @@ import Seneca from 'seneca';
 import Config from 'config';
 import _ from 'lodash';
 
-/** Internal modules */
 /** Kryptstorm system modules*/
 import XMariadb from './libs/x-mariadb';
 import XService from './libs/x-service';
 import XWeb from './libs/x-web';
 
 /** Services */
-import XUser from './modules/x-user';
-import XAuth from './modules/x-auth';
+import UserService, {
+	routes as userRoutes,
+	publicRoutes as userPublicRoutes
+} from './modules/x-user/user';
+import AuthenticationService, {
+	routes as authenticationRoutes,
+	publicRoutes as authenticationPublicRoutes
+} from './modules/x-user/authentication';
+
+/** Models */
+import User from './modules/x-user/user/model';
 
 /** Web config */
 const HTTPPort = process.env.API_PORT || 9999;
 
 /** Model config */
-const models = [...XUser.models, ...XAuth.models];
+const models = [User];
 
 /** Routes config */
-const routes = [XUser.routes, XAuth.routes];
+const routes = [userRoutes, authenticationRoutes];
 
 /** Public routes - guest can access */
-const publicRoutes = [...XUser.publicRoutes, ...XAuth.publicRoutes];
+const publicRoutes = [userPublicRoutes, authenticationPublicRoutes];
 
 /** Seneca plugins */
-const services = [...XUser.services, ...XAuth.services];
+const services = [UserService, AuthenticationService];
 
 /** Register seneca plugins */
 const options = {

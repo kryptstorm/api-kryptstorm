@@ -5,24 +5,25 @@ import Config from 'config';
 import JWT from 'jsonwebtoken';
 import Bluebird from 'bluebird';
 
-/** Internal modules */
+/** Model */
 import User, {
 	STATUS_NEW, STATUS_ACTIVE,
 	VALIDATION_TYPE_NONE,
-} from '../../x-user/models/user.model';
+} from '../user/model';
 
 const jwtSign = Bluebird.promisify(JWT.sign);
 const jwtVerify = Bluebird.promisify(JWT.verify);
 
-export default function XAuthAuthenticationService() {
+/** Service */
+export default function AuthenticationService() {
 	const { act } = this.XService$;
 
-	this.add('init:XAuthAuthenticationService', function XAuthAuthenticationServiceInit(args, done) {
+	this.add('init:AuthenticationService', function AuthenticationServiceInit(args, done) {
 		return done();
 	});
 
 	/** Overwrite create function with register */
-	this.add('x_user:users, func:create, scenario:register', function xAuthAuthenticationRegister(args, done) {
+	this.add('x_user:users, func:create, scenario:register', function AuthenticationRegister(args, done) {
 		let { payload$ = {} } = args;
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { attributes = {} } = payload$;
@@ -109,5 +110,30 @@ export default function XAuthAuthenticationService() {
 	});
 
 	/** You must return plugin name */
-	return { name: 'XAuthAuthenticationService' };
+	return { name: 'AuthenticationService' };
 }
+
+/** Routes */
+export const routes = {
+	endpoint: '/x-auth',
+	map: {
+		'/auth/register': {
+			'POST': 'x_auth:authentication, func:register',
+		},
+		'/auth/login': {
+			'POST': 'x_auth:authentication, func:login',
+		},
+		'/auth/verify': {
+			'GET': 'x_auth:authentication, func:verify',
+			'POST': 'x_auth:authentication, func:verify',
+		},
+	}
+};
+
+/**
+ * Public routes
+ * 
+ * If you don't defined public routes, all routes will be consider as private route
+ * If authentication or authorization has been installed, rule will be execute
+ */
+export const publicRoutes = ['/x-auth/auth/register', '/x-auth/auth/login', '/x-auth/auth/verify'];

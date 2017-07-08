@@ -3,24 +3,22 @@ import _ from 'lodash';
 import Sequelize from 'sequelize';
 import Validator from 'validator';
 
-/** Internal modules */
+/** Model */
 import User, {
 	STATUS_NEW, STATUS_ACTIVE,
-	generateValidationBaseOnStatus, REAL_PUBLIC_FIELDS, VIRTUAL_PUBLIC_FILEDS
-} from '../models/user.model';
+	REAL_PUBLIC_FIELDS, VIRTUAL_PUBLIC_FILEDS,
+	generateValidationBaseOnStatus
+} from './model';
 
-/**
- * Seneca plugin
- * You must not use arrow function on export plugin, because `this` context was bound with seneca instance
- */
-export default function XUserUsersService() {
+/** Service */
+export default function UserService() {
 	const { act } = this.XService$;
 
-	this.add({ init: 'XUserUsersService' }, function XUserUsersServiceInit(args, done) {
+	this.add({ init: 'UserService' }, function UserServiceInit(args, done) {
 		return done();
 	});
 
-	this.add('x_user:users, func:create', function xUserUsersCreateUser({ payload$ = {} }, done) {
+	this.add('x_user:users, func:create', function UserCreate({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { attributes = {} } = payload$;
 		attributes = _.pick(attributes, [...REAL_PUBLIC_FIELDS, 'password']);
@@ -64,7 +62,7 @@ export default function XUserUsersService() {
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
-	this.add('x_user:users, func:find_by_id', function xUserUsersFindByIdUser({ payload$ = {} }, done) {
+	this.add('x_user:users, func:find_by_id', function UserFindById({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { params = {} } = payload$;
 
@@ -86,7 +84,7 @@ export default function XUserUsersService() {
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
-	this.add('x_user:users, func:find_all', function xUserUsersFindAllUser({ payload$ = {} }, done) {
+	this.add('x_user:users, func:find_all', function UserFindAll({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { select = [], condition = {}, order = { id: 'DESC' }, pagination = {} } = payload$, where = {};
 
@@ -136,7 +134,7 @@ export default function XUserUsersService() {
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
-	this.add('x_user:users, func:update_by_id', function xUserUsersUpdateUser({ payload$ = {} }, done) {
+	this.add('x_user:users, func:update_by_id', function UserUpdate({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { params = {}, attributes = {} } = payload$;
 
@@ -173,7 +171,7 @@ export default function XUserUsersService() {
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
-	this.add('x_user:users, func:delete_by_id', function xUserUsersDeleteByIdUser({ payload$ = {} }, done) {
+	this.add('x_user:users, func:delete_by_id', function UserDeleteById({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		let { params = {} } = payload$;
 
@@ -195,7 +193,7 @@ export default function XUserUsersService() {
 			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
 	});
 
-	this.add('x_user:users, validate:unique', function xUserUsersValidateUnique({ payload$ }, done) {
+	this.add('x_user:users, validate:unique', function UserValidateUnique({ payload$ }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		const { attributes = {} } = payload$;
 		const { field = '', value = '' } = attributes;
@@ -211,5 +209,32 @@ export default function XUserUsersService() {
 	});
 
 	/** You must return plugin name */
-	return { name: 'XUserUsersService' };
+	return { name: 'UserService' };
 }
+
+/** Routes */
+export const routes = {
+	endpoint: '/x-user',
+	map: {
+		'/users': {
+			'GET': 'x_user:users, func:find_all',
+			'POST': 'x_user:users, func: create',
+		},
+		'/users/:id': {
+			'GET': 'x_user:users, func:find_by_id',
+			'PUT': 'x_user:users, func:update_by_id',
+			'DELETE': 'x_user:users, func:delete_by_id',
+		},
+		'/users/validation/unique': {
+			'POST': 'x_user:users, validate:unique',
+		},
+	}
+};
+
+/**
+ * Public routes
+ * 
+ * If you don't defined public routes, all routes will be consider as private route
+ * If authentication or authorization has been installed, rule will be execute
+ */
+export const publicRoutes = ['/x-user/users/validation/unique'];
