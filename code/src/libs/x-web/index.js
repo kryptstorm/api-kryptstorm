@@ -22,11 +22,14 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 	}));
 
 	const _authentication = (authentication, publicRoutes, req, res, next) => {
+		/** Authentication pattern is not provided, allow guest user enter all routes */
 		if (!authentication) return next();
-
+		/** Allow guest user enter public routes */
 		if (_.isArray(publicRoutes) && _.includes(publicRoutes, req.url)) {
 			return next();
 		}
+
+		/** Seneca authentication pattern was not registered */
 		if (!seneca.has(authentication) || !_.isString(authentication)) {
 			return next(new XError(`You must register authentication pattern before used. You gave [${JSON.stringify(authentication)}]`));
 		}
@@ -36,10 +39,10 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 				if (!(result && _.isObject(result))) {
 					return next(new XError('Result of action was null. It must be had at least errorCode$'));
 				}
-				const { errorCode$ = 'ERROR_NONE', data$ = {}, message$ = '', errors$ = {}, _catch } = result;
+				const { errorCode$ = 'ERROR_NONE', data$ = {}, message$ = '', errors$ = {}, _error } = result;
 				/** Any where system catch an error, throw it */
-				if (typeof _catch !== 'undefined') {
-					return next(_catch);
+				if (typeof _error !== 'undefined') {
+					return next(_error);
 				}
 
 				if (errorCode$ !== 'ERROR_NONE') {
@@ -49,7 +52,7 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 				req._user = data$;
 				return next();
 			})
-			.catch(_catch => next(new XError(_catch.message)));
+			.catch(_error => next(new XError(_error.message)));
 	}
 	const _prepareCondition = (condition = {}) => {
 		if (!_.isObject(condition) || _.isEmpty(condition)) {
@@ -227,11 +230,11 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 				if (!(result && _.isObject(result))) {
 					return next(new XError('Result of action was null. It must be had at least errorCode$'));
 				}
-				const { errorCode$ = 'ERROR_NONE', data$ = {}, message$ = '', errors$ = {}, _meta$ = {}, _catch } = result;
+				const { errorCode$ = 'ERROR_NONE', data$ = {}, message$ = '', errors$ = {}, _meta$ = {}, _error } = result;
 
 				/** Any where system catch an error, throw it */
-				if (typeof _catch !== 'undefined') {
-					return next(_catch);
+				if (typeof _error !== 'undefined') {
+					return next(_error);
 				}
 
 				let responseData = { errorCode: errorCode$ };
@@ -243,7 +246,7 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 
 				return res.json(responseData);
 			})
-			.catch(_catch => next(new XError(_catch.message)));
+			.catch(_error => next(new XError(_error.message)));
 	}
 	const _getPayload = (req) => {
 		const { query = {}, body = {}, params = {}, method } = req;
@@ -296,7 +299,7 @@ export default function XWeb({ auth = {}, routes = [], isDebug = false }) {
 		if (_.isEmpty(routes) || !_.isArray(routes)) return done(new Error('Init XWeb must defined routes.'));
 		if (!_.isEmpty(auth) && _.isObject(auth)) {
 			const { authentication, publicRoutes } = auth;
-			server.use(_authentication.bind(authentication, publicRoutes));
+			server.use(_authentication.bind(server, authentication, publicRoutes));
 		}
 
 		/** Init web handler */

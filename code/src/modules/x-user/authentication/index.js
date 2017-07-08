@@ -81,11 +81,11 @@ export default function AuthenticationService() {
 
 						return jwtSign(_.pick(data$, ['id', 'username', 'email']), Config.get('jwt.secreteKey'), Config.get('jwt.defaultOptions'))
 							.then(token => done(null, { data$: { token } }))
-							.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+							.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 					})
-					.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+					.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_auth:authentication, func:verify', function xAuthAuthenticatioVerify({ payload$ = {} }, done) {
@@ -104,9 +104,9 @@ export default function AuthenticationService() {
 
 						return done(null, { data$: _.pick(data$, ['id', 'username', 'email']) });
 					})
-					.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+					.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	/** You must return plugin name */

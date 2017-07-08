@@ -60,7 +60,7 @@ export default function XMariadb({
 			db
 				.define(`${tablePrefix}_${name}`, schema, schemaOptions)
 				.sync()
-				.catch(_catch => done(null, { _catch }));
+				.catch(_error => done(null, { _error }));
 		});
 
 		return db

@@ -59,7 +59,7 @@ export default function UserService() {
 				_.assign(data$, { full_name: `${data$.first_name} ${data$.last_name}` });
 				return done(null, { data$, _meta$ });
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_user:users, func:find_by_id', function UserFindById({ payload$ = {} }, done) {
@@ -81,7 +81,7 @@ export default function UserService() {
 				_.assign(data$, { full_name: `${data$.first_name} ${data$.last_name}` });
 				return done(null, { data$, _meta$ });
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_user:users, func:find_all', function UserFindAll({ payload$ = {} }, done) {
@@ -133,7 +133,7 @@ export default function UserService() {
 
 		return act('x_mariadb:find_all', dbPayload)
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_user:users, func:update_by_id', function UserUpdate({ payload$ = {} }, done) {
@@ -170,7 +170,7 @@ export default function UserService() {
 				_.assign(data$, { full_name: `${data$.first_name} ${data$.last_name}` });
 				return done(null, { data$, _meta$ });
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_user:users, func:delete_by_id', function UserDeleteById({ payload$ = {} }, done) {
@@ -192,7 +192,7 @@ export default function UserService() {
 				_.assign(data$, { full_name: `${data$.first_name} ${data$.last_name}` });
 				return done(null, { data$, _meta$ });
 			})
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	this.add('x_user:users, validate:unique', function UserValidateUnique({ payload$ }, done) {
@@ -207,7 +207,7 @@ export default function UserService() {
 
 		return act('x_mariadb:validate, scenario:unique', { model: User.name, field, value, })
 			.then(done.bind(this, null))
-			.catch(_catch => done(null, { errorCode$: 'ERROR_SYSTEM', _catch }));
+			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
 	/** You must return plugin name */

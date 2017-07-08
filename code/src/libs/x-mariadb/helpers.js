@@ -5,10 +5,10 @@ import Config from 'config';
 
 
 /** Error handler for mariadb */
-export function xMariadbErrorHandler(done, returnErrorFields = [], _catch) {
+export function xMariadbErrorHandler(done, returnErrorFields = [], _error) {
 	/** You should catch validation error at here */
-	if (_catch instanceof ValidationError) {
-		const { errors } = _catch;
+	if (_error instanceof ValidationError) {
+		const { errors } = _error;
 		let errors$ = {};
 
 		if (_.isArray(returnErrorFields)) {
@@ -24,7 +24,7 @@ export function xMariadbErrorHandler(done, returnErrorFields = [], _catch) {
 		return done(null, { errorCode$: 'ERROR_VALIDATION_FAILED', message$: `Validation was failed.`, errors$ });
 	}
 
-	return done(null, { errorCode$: 'ERROR_SYSTEM', _catch });
+	return done(null, { errorCode$: 'ERROR_SYSTEM', _error });
 }
 
 /** Model validation */
