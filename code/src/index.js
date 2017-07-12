@@ -6,35 +6,25 @@ import _ from 'lodash';
 /** Kryptstorm system modules*/
 import XMariadb from './libs/x-mariadb';
 import XService from './libs/x-service';
-import XWeb from './libs/x-web';
+import XHttp from './libs/x-http';
 
-/** Services */
-import UserService, {
-	routes as userRoutes,
-	publicRoutes as userPublicRoutes
-} from './modules/x-user/user';
-import AuthenticationService, {
-	routes as authenticationRoutes,
-	publicRoutes as authenticationPublicRoutes
-} from './modules/x-user/authentication';
-
-/** Models */
-import User from './modules/x-user/user/model';
+/** Internal Modules */
+import XUserService, { models as XUserModels, routes as XUserRoutes, authenticationExcludeRoutes as XUserAuthenticationExcludeRoutes } from './modules/x-user';
 
 /** Web config */
 const HTTPPort = process.env.API_PORT || 9999;
 
 /** Model config */
-const models = [User];
+const models = [...XUserModels];
 
 /** Routes config */
-const routes = [userRoutes, authenticationRoutes];
+const routes = _.assign({}, XUserRoutes);
 
 /** Public routes - guest can access */
-const publicRoutes = [userPublicRoutes, authenticationPublicRoutes];
+const authenticationExcludeRoutes = [...XUserAuthenticationExcludeRoutes];
 
 /** Seneca plugins */
-const services = [UserService, AuthenticationService];
+const services = [...XUserService];
 
 /** Register seneca plugins */
 const options = {
@@ -46,15 +36,15 @@ const App = Seneca(options);
 /** Register System service to handle application */
 App.use(XService);
 App.use(XMariadb, { models, tablePrefix: 'kryptstorm' });
-App.use(XWeb, {
-	auth: { authentication: 'x_auth:authentication, func:verify', publicRoutes },
-	routes,
-	isDebug: Config.get('api.isDebug')
-});
 
 _.reduce(services, (app, nextService) => app.use(nextService), App)
+	.use(XHttp, {
+		authentication: { authenticationPattern: 'x_auth:authentication, func:verify', authenticationExcludeRoutes },
+		routes,
+		isDebug: Config.get('api.isDebug')
+	})
 	/** Only handle http/socketio after all plugin was ready. */
 	.ready(() => {
-		const server = App.export('XWeb/server');
+		const server = App.export('XHttp/server');
 		return server.listen(HTTPPort, () => console.log(`XWeb was running on http://localhost:${HTTPPort}`));
 	});

@@ -213,30 +213,3 @@ export default function UserService() {
 	/** You must return plugin name */
 	return { name: 'UserService' };
 }
-
-/** Routes */
-export const routes = {
-	endpoint: '/x-user',
-	map: {
-		'/users': {
-			'GET': 'x_user:users, func:find_all',
-			'POST': 'x_user:users, func: create',
-		},
-		'/users/:id': {
-			'GET': 'x_user:users, func:find_by_id',
-			'PUT': 'x_user:users, func:update_by_id',
-			'DELETE': 'x_user:users, func:delete_by_id',
-		},
-		'/users/validation/unique': {
-			'POST': 'x_user:users, validate:unique',
-		},
-	}
-};
-
-/**
- * Public routes
- * 
- * If you don't defined public routes, all routes will be consider as private route
- * If authentication or authorization has been installed, rule will be execute
- */
-export const publicRoutes = ['/x-user/users/validation/unique'];

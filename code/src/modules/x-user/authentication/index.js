@@ -112,28 +112,3 @@ export default function AuthenticationService() {
 	/** You must return plugin name */
 	return { name: 'AuthenticationService' };
 }
-
-/** Routes */
-export const routes = {
-	endpoint: '/x-auth',
-	map: {
-		'/auth/register': {
-			'POST': 'x_auth:authentication, func:register',
-		},
-		'/auth/login': {
-			'POST': 'x_auth:authentication, func:login',
-		},
-		'/auth/verify': {
-			'GET': 'x_auth:authentication, func:verify',
-			'POST': 'x_auth:authentication, func:verify',
-		},
-	}
-};
-
-/**
- * Public routes
- * 
- * If you don't defined public routes, all routes will be consider as private route
- * If authentication or authorization has been installed, rule will be execute
- */
-export const publicRoutes = ['/x-auth/auth/register', '/x-auth/auth/login', '/x-auth/auth/verify'];
