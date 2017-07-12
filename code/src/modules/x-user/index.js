@@ -31,11 +31,11 @@ export const routes = {
 		'POST': 'x_user:users, func:create, scenario:register',
 	},
 	'/auth/login': {
-		'POST': 'x_auth:authentication, func:login',
+		'POST': 'x_user:authentication, func:login',
 	},
 	'/auth/verify': {
-		'GET': 'x_auth:authentication, func:verify',
-		'POST': 'x_auth:authentication, func:verify',
+		'GET': 'x_user:authentication, func:verify',
+		'POST': 'x_user:authentication, func:verify',
 	},
 };
 

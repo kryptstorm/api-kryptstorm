@@ -45,7 +45,7 @@ export default function AuthenticationService() {
 		this.prior(args, done);
 	});
 
-	this.add('x_auth:authentication, func:login', function xAuthAuthenticatioLogin({ payload$ = {} }, done) {
+	this.add('x_user:authentication, func:login', function xAuthAuthenticatioLogin({ payload$ = {} }, done) {
 		payload$ = _.isObject(payload$) ? payload$ : {};
 		const { attributes = {} } = payload$, { username, email, password } = attributes;
 
@@ -88,7 +88,7 @@ export default function AuthenticationService() {
 			.catch(_error => done(null, { errorCode$: 'ERROR_SYSTEM', _error }));
 	});
 
-	this.add('x_auth:authentication, func:verify', function xAuthAuthenticatioVerify({ payload$ = {} }, done) {
+	this.add('x_user:authentication, func:verify', function xAuthAuthenticatioVerify({ payload$ = {} }, done) {
 		const verifyFailed = { errorCode$: 'ERROR_AUTH_AUTHENTICATION_FAILED', message$: 'Your session has expired.' };
 
 		const { _meta = {} } = payload$;
