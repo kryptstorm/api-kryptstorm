@@ -6,7 +6,8 @@ module.exports = {
 			author: require('../package.json').author.name,
 		},
 		isDebug: true,
-		httpVerbs: ['get', 'post', 'put', 'delete']
+		httpVerbs: ['get', 'post', 'put', 'delete'],
+		perPageLimit: 20,
 	},
 	mongo: {
 		name: process.env.MONGO_DATABASE,

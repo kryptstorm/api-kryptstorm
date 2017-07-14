@@ -1,10 +1,10 @@
 /** External modules */
-import Express from 'express';
-import BodyParser from 'body-parser';
-import Cors from 'cors';
-import MethodOverride from 'method-override';
-import _ from 'lodash';
-import Config from 'config';
+import Express from "express";
+import BodyParser from "body-parser";
+import Cors from "cors";
+import MethodOverride from "method-override";
+import _ from "lodash";
+import Config from "config";
 
 /**
  * Example routes
@@ -15,133 +15,249 @@ import Config from 'config';
  * @returns Object
  */
 export default function Http({ withDefaultConfig = true, isDebug = false }) {
-	const { actAsync } = this.Services$;
-	let server, serverRoutes = {};
+  const { actAsync } = this.Services$;
+  let server,
+    serverRoutes = {};
 
-	/** Init function */
-	this.add('init:Http', function initHttp(args, reply) {
-		/** Init express server */
-		server = Express();
-		if (withDefaultConfig) {
-			/** Default config */
-			server.use(MethodOverride('X-HTTP-Method-Override'));
-			server.use(Cors({ methods: ['GET', 'POST'] }));
-			server.use(BodyParser.json());
-			server.use(BodyParser.urlencoded({ extended: true }));
-		}
+  /** Init function */
+  this.add("init:Http", function initHttp(args, reply) {
+    /** Init express server */
+    server = Express();
+    if (withDefaultConfig) {
+      /** Default config */
+      server.use(MethodOverride("X-HTTP-Method-Override"));
+      server.use(Cors({ methods: ["GET", "POST"] }));
+      server.use(BodyParser.json());
+      server.use(BodyParser.urlencoded({ extended: true }));
+    }
 
-		return reply();
-	});
+    return reply();
+  });
 
-	/** Add midleware to express */
-	this.add('http:add_midleware', function addMidleware({ pattern = '' }, reply) {
-		server.use((req, res, next) => {
-			return actAsync(pattern, { req$: req })
-				.then(({ errorCode$ = 'ERROR_NONE', message$ = '', data$ = {}, meta$ }) => {
-					/** Midleware have error */
-					if (errorCode$ !== 'ERROR_NONE') {
-						res.json({ errorCode: errorCode$, message: message$ });
-						return reply();
-					}
-					/** OK, Fine! */
-					next();
-					return reply();
-				})
-				.catch(error => {
-					/** Go to express error handler */
-					next(error);
-					return reply();
-				});
-		});
-	});
+  /** Add midleware to express */
+  this.add("http:add_midleware", function addMidleware(
+    { pattern = "" },
+    reply
+  ) {
+    server.use((req, res, next) => {
+      return actAsync(pattern, { req$: req })
+        .then(
+          ({ errorCode$ = "ERROR_NONE", message$ = "", data$ = {}, meta$ }) => {
+            /** Midleware have error */
+            if (errorCode$ !== "ERROR_NONE") {
+              res.json({ errorCode: errorCode$, message: message$ });
+              return reply();
+            }
+            /** OK, Fine! */
+            next();
+            return reply();
+          }
+        )
+        .catch(error => {
+          /** Go to express error handler */
+          next(error);
+          return reply();
+        });
+    });
+  });
 
-	/** Update route if it has alrady exist, add new if it is not exist */
-	this.add('http:save_route', function saveRoute({ url = '', handler = {} }, reply) {
-		/** url must be a string */
-		if (!_.isString(url)) {
-			console.log(`To inject route handler, url must be a string. You gave ${JSON.stringify(url)}`);
-			return reply();
-		}
-		/** handler must be an object */
-		if (!_.isObject(handler)) {
-			console.log(`To inject route handler, handler must be an object. You gave ${JSON.stringify(handler)}`);
-			return reply();
-		}
+  /** Update route if it has alrady exist, add new if it is not exist */
+  this.add("http:save_route", function saveRoute(
+    { url = "", handler = {} },
+    reply
+  ) {
+    /** url must be a string */
+    if (!_.isString(url)) {
+      console.log(
+        `To inject route handler, url must be a string. You gave ${JSON.stringify(
+          url
+        )}`
+      );
+      return reply();
+    }
+    /** handler must be an object */
+    if (!_.isObject(handler)) {
+      console.log(
+        `To inject route handler, handler must be an object. You gave ${JSON.stringify(
+          handler
+        )}`
+      );
+      return reply();
+    }
 
-		if (serverRoutes[url]) {
-			_.assign(serverRoutes[url], handler);
-		} else {
-			serverRoutes[url] = handler;
-		}
+    if (serverRoutes[url]) {
+      _.assign(serverRoutes[url], handler);
+    } else {
+      serverRoutes[url] = handler;
+    }
 
-		return reply();
-	});
+    return reply();
+  });
 
-	/** Save multi routes */
-	this.add('http:save_routes', function saveRoutes({ routes }, reply) {
-		/** routes must be an object */
-		if (!_.isObject(routes)) {
-			console.log(`To register routes, routes must be an object. You gave ${JSON.stringify(routes)}`);
-			return reply();
-		}
+  /** Save multi routes */
+  this.add("http:save_routes", function saveRoutes({ routes }, reply) {
+    /** routes must be an object */
+    if (!_.isObject(routes)) {
+      console.log(
+        `To register routes, routes must be an object. You gave ${JSON.stringify(
+          routes
+        )}`
+      );
+      return reply();
+    }
 
-		_.assign(serverRoutes, routes);
-		return reply();
-	});
+    _.assign(serverRoutes, routes);
+    return reply();
+  });
 
-	/**
+  /**
 	 * 1. Handle all routes
 	 * 2. Handle 404
 	 * 3. Handle error
 	 */
-	this.add('http:run', function run(args, reply) {
-		/** Handle each route */
-		_.each(serverRoutes, (pattern, route) => {
-			/** route must be a string */
-			if (!_.isString(route)) return console.log(`Routes must be a string. You gave [${JSON.stringify(route)}]`);
-			/** route can not be blank */
-			if (!route) return console.log('Routes can not e blank');
+  this.add("http:run", function run(args, reply) {
+    /** Handle each route */
+    _.each(serverRoutes, (pattern, route) => {
+      /** route must be a string */
+      if (!_.isString(route))
+        return console.log(
+          `Routes must be a string. You gave [${JSON.stringify(route)}]`
+        );
+      /** route can not be blank */
+      if (!route) return console.log("Routes can not e blank");
 
-			const methodAndUrl = route.split(':');
-			const method = methodAndUrl[0], url = methodAndUrl[1];
-			/** route must contain method and url with format _method_:_url_ */
-			if (!method || !url) return console.log(`Route must contain method and url with format _method_:_url_. You gave [${route}]`);
-			/** Allow method was defined at api.httpVerbs */
-			if (!_.includes(Config.get('api.httpVerbs'), method)) return console.log(`Method [${method}] is not allowed. It must be in [${JSON.stringify(Config.get('api.httpVerbs'))}]`);
+      const methodAndUrl = route.split(":");
+      const method = methodAndUrl[0],
+        url = methodAndUrl[1];
+      /** route must contain method and url with format _method_:_url_ */
+      if (!method || !url)
+        return console.log(
+          `Route must contain method and url with format _method_:_url_. You gave [${route}]`
+        );
+      /** Allow method was defined at api.httpVerbs */
+      if (!_.includes(Config.get("api.httpVerbs"), method))
+        return console.log(
+          `Method [${method}] is not allowed. It must be in [${JSON.stringify(
+            Config.get("api.httpVerbs")
+          )}]`
+        );
 
-			/** Pattern must be a string */
-			if (!_.isString(pattern)) return console.log('Seneca pattern must defined as a string.');
-			/** Pattern mus be registered */
-			if (!this.has(pattern)) return console.log(`Pattern [${pattern}] has not been registered.`);
+      /** Pattern must be a string */
+      if (!_.isString(pattern))
+        return console.log("Seneca pattern must defined as a string.");
+      /** Pattern mus be registered */
+      if (!this.has(pattern))
+        return console.log(`Pattern [${pattern}] has not been registered.`);
 
-			server.use((req, res, next) => actAsync(pattern, {})
-				.then(({ errorCode$ = 'ERROR_NONE', message$ = '', data$ = {}, meta$ }) => {
-					if (errorCode$ !== 'ERROR_NONE') {
-						return res.json({ errorCode: errorCode$, message: message$ });
-					}
+      server.use((req, res, next) =>
+        actAsync(pattern, {})
+          .then(
+            ({
+              errorCode$ = "ERROR_NONE",
+              message$ = "",
+              data$ = {},
+              meta$
+            }) => {
+              if (errorCode$ !== "ERROR_NONE") {
+                return res.json({ errorCode: errorCode$, message: message$ });
+              }
 
-					return res.json({ errorCode: errorCode$, data: data$, meta: meta$ });
-				})
-				.catch(error => next(error)));
-		})
+              return res.json({
+                errorCode: errorCode$,
+                data: data$,
+                meta: meta$
+              });
+            }
+          )
+          .catch(error => next(error))
+      );
+    });
 
-		/** Handle 404 error */
-		server.use((req, res, next) => {
-			return res.status(404).json({ errorCode: 'ERROR_NOT_FOUND', message: `The requested URL [${req.url}] was not found on this server` });
-		});
+    /** Handle 404 error */
+    server.use((req, res, next) => {
+      return res.status(404).json({
+        errorCode: "ERROR_NOT_FOUND",
+        message: `The requested URL [${req.url}] was not found on this server`
+      });
+    });
 
-		/** Handle system error */
-		server.use((err, req, res, next) => {
-			if (err) {
-				const message = isDebug ? err.message : 'Server encountered an error while trying to handle request';
-				return res.status(500).json({ errorCode: 'ERROR_SYSTEM', message });
-			}
+    /** Handle system error */
+    server.use((err, req, res, next) => {
+      if (err) {
+        const message = isDebug
+          ? err.message
+          : "Server encountered an error while trying to handle request";
+        return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
+      }
 
-			return next(err);
-		});
+      return next(err);
+    });
 
-		return reply(null, { server });
-	});
+    return reply(null, { server });
+  });
 
-	return { name: 'Http' };
+  return { name: "Http" };
 }
+
+const _getPayload = req => {
+  const { query = {}, body = {}, params = {}, method } = req;
+  let { condition, limit, page, orderBy, asc, token = "" } = query;
+
+  let _payload = {};
+
+  /** Get JWT from header or query */
+  if (!token) token = req.get("Token");
+  _payload.token = !_.isString(token) ? token : "";
+
+  /** Bind _payload */
+  switch (method) {
+    case "POST":
+      _payload.attributes = _.isObject(body) ? body : {};
+      break;
+    case "GET":
+      _payload.condition = _prepareCondition(condition);
+      _payload.order = _prepareOrder(orderBy, asc);
+      _payload.pagination = _preparePagination(limit, page);
+      _payload.params = params;
+      break;
+    case "PUT":
+      _payload.params = params;
+      _payload.attributes = _.isObject(body) ? body : {};
+      break;
+    case "DELETE":
+      _payload.params = params;
+      break;
+  }
+
+  return _payload;
+};
+
+const _prepareCondition = (condition = {}) => {
+  if (!_.isObject(condition) || _.isEmpty(condition)) {
+    return {};
+  }
+
+  return condition;
+};
+
+const _prepareOrder = (orderBy = "id", asc) => {
+  if (!_.isEmpty(orderBy) && _.isString(orderBy)) {
+    return { [orderBy]: asc == 1 ? 1 : -1 };
+  }
+  return { id: -1 };
+};
+
+const _preparePagination = (limit, page) => {
+  let pagination = { limit: Config.get("api.perPageLimit"), skip: 0 };
+
+  limit = parseInt(limit, 10);
+  page = parseInt(page, 10);
+
+  if (_.isNumber(limit) && limit > 0) {
+    pagination.limit = limit;
+  }
+  if (_.isNumber(page) && page > 0) {
+    pagination.skip = (page - 1 < 0 ? page : page - 1) * limit;
+  }
+  return pagination;
+};
