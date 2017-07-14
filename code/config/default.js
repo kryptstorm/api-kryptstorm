@@ -8,4 +8,10 @@ module.exports = {
 		isDebug: true,
 		httpVerbs: ['get', 'post', 'put', 'delete']
 	},
+	mongo: {
+		name: process.env.MONGO_DATABASE,
+		host: process.env.MONGO_HOST,
+		port: process.env.MONGO_PORT,
+		options: {}
+	}
 }
