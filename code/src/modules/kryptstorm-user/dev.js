@@ -8,9 +8,8 @@ if (process.env.NODE_ENV !== "development") {
   console.log(
     `Cannot run development prepare file at env: ${process.env.NODE_ENV}`
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 console.log(App);
-
 process.exit(0);
