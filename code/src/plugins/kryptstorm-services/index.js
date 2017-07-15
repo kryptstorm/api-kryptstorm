@@ -1,14 +1,15 @@
 /** External modules */
-import Bluebird from 'bluebird';
+import Bluebird from "bluebird";
 
 export default function Services({ services = {} }) {
+  this.add("init:Services", function initServices(args, reply) {
+    /** Register Services$ */
+    this.decorate("Services$", {
+      actAsync: Bluebird.promisify(this.act, { context: this })
+    });
 
-	this.add('init:Services', function initServices(args, reply) {
-		/** Register decorate instance */
-		this.decorate('Services$', { actAsync: Bluebird.promisify(this.act, { context: this }) });
-		
-		return reply();
-	});
+    return reply();
+  });
 
-	return { name: 'Services' };
+  return { name: "Services" };
 }

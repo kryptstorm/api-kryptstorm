@@ -17,7 +17,9 @@ import Config from "config";
 export default function Http({ withDefaultConfig = true, isDebug = false }) {
   const { actAsync } = this.Services$;
   let server,
-    serverRoutes = {};
+    serverRoutes = {},
+    mwBefore = [],
+    mwAfter = [];
 
   /** Init function */
   this.add("init:Http", function initHttp(args, reply) {
@@ -34,31 +36,22 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
     return reply();
   });
 
-  /** Add midleware to express */
-  this.add("http:add_midleware", function addMidleware(
+  /** Add midleware to express before execute all route */
+  this.add("http:add_midleware, scenario:before", function addMidleware(
     { pattern = "" },
     reply
   ) {
-    server.use((req, res, next) => {
-      return actAsync(pattern, { req$: req })
-        .then(
-          ({ errorCode$ = "ERROR_NONE", message$ = "", data$ = {}, meta$ }) => {
-            /** Midleware have error */
-            if (errorCode$ !== "ERROR_NONE") {
-              res.json({ errorCode: errorCode$, message: message$ });
-              return reply();
-            }
-            /** OK, Fine! */
-            next();
-            return reply();
-          }
-        )
-        .catch(error => {
-          /** Go to express error handler */
-          next(error);
-          return reply();
-        });
-    });
+    mwBefore.push(pattern);
+    return reply(null, mwBefore);
+  });
+
+  /** Add midleware to express after  execute all route */
+  this.add("http:add_midleware, scenario:after", function addMidleware(
+    { pattern = "" },
+    reply
+  ) {
+    mwAfter.push(pattern);
+    return reply(null, mwAfter);
   });
 
   /** Update route if it has alrady exist, add new if it is not exist */
@@ -68,46 +61,51 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
   ) {
     /** url must be a string */
     if (!_.isString(url)) {
-      console.log(
-        `To inject route handler, url must be a string. You gave ${JSON.stringify(
+      return reply(null, {
+        errorCode$: "HTTP_SAVE_ROUTE_INVALID_URL",
+        message$: `To inject route handler, url must be a string. You gave ${JSON.stringify(
           url
         )}`
-      );
-      return reply();
+      });
     }
     /** handler must be an object */
     if (!_.isObject(handler)) {
-      console.log(
-        `To inject route handler, handler must be an object. You gave ${JSON.stringify(
+      return reply(null, {
+        errorCode$: "HTTP_SAVE_ROUTE_INVALID_HANDLER",
+        message$: `To inject route handler, handler must be an object. You gave ${JSON.stringify(
           handler
         )}`
-      );
-      return reply();
+      });
     }
 
     if (serverRoutes[url]) {
+      console.warn(
+        `You are overwrite route ${url}. Before handler is: ${serverRoutes[
+          url
+        ]}`
+      );
       _.assign(serverRoutes[url], handler);
     } else {
       serverRoutes[url] = handler;
     }
 
-    return reply();
+    return reply(null, { data$: serverRoutes });
   });
 
   /** Save multi routes */
   this.add("http:save_routes", function saveRoutes({ routes }, reply) {
     /** routes must be an object */
     if (!_.isObject(routes)) {
-      console.log(
-        `To register routes, routes must be an object. You gave ${JSON.stringify(
+      return reply(null, {
+        errorCode$: "HTTP_SAVE_ROUTES_INVALID_ROUTE",
+        message$: `To register routes, routes must be an object. You gave ${JSON.stringify(
           routes
         )}`
-      );
-      return reply();
+      });
     }
 
     _.assign(serverRoutes, routes);
-    return reply();
+    return reply(null, serverRoutes);
   });
 
   /**
@@ -116,6 +114,29 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
 	 * 3. Handle error
 	 */
   this.add("http:run", function run(args, reply) {
+    /** Midleware before handl all route */
+    if (!_.isEmpty(mwBefore)) {
+      _.each(mwBefore, pattern =>
+        server.use((req, res, next) =>
+          actAsync(pattern, {})
+            .then(
+              ({
+                errorCode$ = "ERROR_NONE",
+                message$ = "",
+                data$ = {},
+                meta$
+              }) => {
+                if (errorCode$ !== "ERROR_NONE") {
+                  return res.json({ errorCode: errorCode$, message: message$ });
+                }
+                return next();
+              }
+            )
+            .catch(error => next(error))
+        )
+      );
+    }
+
     /** Handle each route */
     _.each(serverRoutes, (pattern, route) => {
       /** route must be a string */
@@ -173,25 +194,51 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
       );
     });
 
-    /** Handle 404 error */
-    server.use((req, res, next) => {
-      return res.status(404).json({
-        errorCode: "ERROR_NOT_FOUND",
-        message: `The requested URL [${req.url}] was not found on this server`
+    /** Midleware after handl all route */
+    if (!_.isEmpty(mwAfter)) {
+      _.each(mwAfter, pattern =>
+        server.use((req, res, next) =>
+          actAsync(pattern, {})
+            .then(
+              ({
+                errorCode$ = "ERROR_NONE",
+                message$ = "",
+                data$ = {},
+                meta$
+              }) => {
+                if (errorCode$ !== "ERROR_NONE") {
+                  return res.json({ errorCode: errorCode$, message: message$ });
+                }
+                return next();
+              }
+            )
+            .catch(error => next(error))
+        )
+      );
+    }
+
+    /** Default config */
+    if (withDefaultConfig) {
+      /** Handle 404 error */
+      server.use((req, res, next) => {
+        return res.status(404).json({
+          errorCode: "ERROR_NOT_FOUND",
+          message: `The requested URL [${req.url}] was not found on this server`
+        });
       });
-    });
 
-    /** Handle system error */
-    server.use((err, req, res, next) => {
-      if (err) {
-        const message = isDebug
-          ? err.message
-          : "Server encountered an error while trying to handle request";
-        return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
-      }
+      /** Handle system error */
+      server.use((err, req, res, next) => {
+        if (err) {
+          const message = isDebug
+            ? err.message
+            : "Server encountered an error while trying to handle request";
+          return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
+        }
 
-      return next(err);
-    });
+        return next(err);
+      });
+    }
 
     return reply(null, { server });
   });

@@ -4,10 +4,11 @@ import Config from "config";
 
 /** Kryptstorm plugins */
 import Services from "./plugins/kryptstorm-services";
+import Enitties from "./plugins/kryptstorm-entities";
 import Https from "./plugins/kryptstorm-https";
 
-/** Kryptstorm service */
-import KryptstormUser from "./services/kryptstorm-user";
+/** Kryptstorm modules */
+import KryptstormUser from "./modules/kryptstorm-user";
 
 /** Init Seneca */
 const options = {
@@ -30,6 +31,8 @@ App.use("entity");
 /** Register kryptstorm Plugin */
 /** Kryptstorm Service */
 App.use(Services);
+/** Kryptstorm Entities */
+App.use(Enitties);
 /** Kryptstorm Http */
 App.use(Https, { isDebug: Config.get("api.isDebug") });
 
@@ -40,7 +43,8 @@ App.use(KryptstormUser);
 /** All services is ready, now we handle http connection */
 App.ready(() =>
   App.Services$
-    .actAsync("http:run")
+    .actAsync("entities:run")
+    .then(() => App.Services$.actAsync("http:run"))
     .then(({ server }) =>
       server.listen(process.env.PORT || 9999, () =>
         console.log("Server is ready to handle connection")
