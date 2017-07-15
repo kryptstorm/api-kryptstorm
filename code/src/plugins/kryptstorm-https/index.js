@@ -170,7 +170,7 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
       if (!this.has(pattern))
         return console.log(`Pattern [${pattern}] has not been registered.`);
 
-      server.use((req, res, next) =>
+      server[method](url,(req, res) =>
         actAsync(pattern, {})
           .then(
             ({
