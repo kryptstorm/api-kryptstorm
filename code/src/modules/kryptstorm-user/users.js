@@ -13,8 +13,16 @@ export default function Users() {
     /** First, register entity for this service */
     actAsync("entities:add", { name: "users" })
       /** Then register routes for this plugin */
-      .then(result => actAsync("http:save_routes", { routes }))
-      .then(result => reply())
+      .then(() => actAsync("http:save_routes", { routes }))
+      /**
+			 * Your are in promise chain, so just write .then(() => reply()) will throw warning
+			 * Warning: a promise was created in a handler at xxx/xxx/xxx.js but was not returned from it, see http://goo.gl/rRqMUw
+			 * @see http://goo.gl/rRqMUw
+			 * 
+			 * So, do a trick to resolve this problem
+			 * Resolve a result from reply();
+			 */
+      .then(() => Bluebird.resolve(reply()))
       .catch(reply);
   });
 

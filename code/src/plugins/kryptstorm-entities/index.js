@@ -10,13 +10,13 @@ export default function Entities() {
 
   this.add("entities:add", function add({ name = "" }, reply) {
     /** Validate name of entity */
-    if (!name) return reply(null, { errorCode$: "ENTITIES_ADD_EMPTY_NAME" });
+    if (!name)  reply(null, { errorCode$: "ENTITIES_ADD_EMPTY_NAME" });
     if (!_.isString(name))
       return reply(null, { errorCode$: "ENTITIES_ADD_INVALID_NAME" });
 
     /** Alway use lower case */
     entities.push(_.toLower(name));
-    return reply(null, { data$: entities });
+     reply(null, { data$: entities });
   });
 
   this.add("entities:run", function run(args, reply) {

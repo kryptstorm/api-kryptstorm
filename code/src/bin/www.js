@@ -5,7 +5,7 @@ App.ready(() =>
   App.Services$
     .actAsync("entities:run")
     .then(() => App.Services$.actAsync("http:run"))
-    .then(({ server }) =>
+    .then(({ data$: server }) =>
       server.listen(process.env.PORT || 9999, () =>
         console.log("Server is ready to handle connection")
       )
