@@ -11,5 +11,8 @@ if (process.env.NODE_ENV !== "development") {
   process.exit(0);
 }
 
-console.log(App);
-process.exit(0);
+/** All services is ready, now we handle http connection */
+App.ready(() => {
+  console.log("ready");
+  process.exit(0);
+});

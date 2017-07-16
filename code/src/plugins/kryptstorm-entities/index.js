@@ -3,52 +3,25 @@ import Bluebird from "bluebird";
 import _ from "lodash";
 
 export default function Entities() {
-  let entities = [];
   this.add("init:Entities", function initEntities(args, reply) {
-    return reply();
-  });
+    const entityClass = this.private$.exports.Entity.prototype,
+      entity = this.private$.entity;
 
-  this.add("entities:add", function add({ name = "" }, reply) {
-    /** Validate name of entity */
-    if (!name)  reply(null, { errorCode$: "ENTITIES_ADD_EMPTY_NAME" });
-    if (!_.isString(name))
-      return reply(null, { errorCode$: "ENTITIES_ADD_INVALID_NAME" });
-
-    /** Alway use lower case */
-    entities.push(_.toLower(name));
-     reply(null, { data$: entities });
-  });
-
-  this.add("entities:run", function run(args, reply) {
-    let entitiesAsync = {};
-    /** Validate entities */
-    if (_.isEmpty(entities))
-      return reply(null, { errorCode$: "ENTITIES_EMPTY_ENTITIES" });
-
-    /** Register entities */
-    _.each(entities, entity => {
-      /** Callback style entity method */
-      const cbEntity = this.make$(`${entity}`);
-
-      /** Register promise style for this entity */
-      entitiesAsync[`${entity}$`] = {
-        save$: Bluebird.promisify(cbEntity.save$, {
-          context: cbEntity
-        }),
-        load$: Bluebird.promisify(cbEntity.load$, {
-          context: cbEntity
-        }),
-        list$: Bluebird.promisify(cbEntity.list$, {
-          context: cbEntity
-        }),
-        remove$: Bluebird.promisify(cbEntity.remove$, {
-          context: cbEntity
-        })
-      };
+    /** Register async entity method */
+    entityClass.asyncSave$ = Bluebird.promisify(entityClass.save$, {
+      context: entity
     });
-
-    this.decorate("Entities$", entitiesAsync);
-    return reply(null, { data$: entitiesAsync });
+    entityClass.asyncList$ = Bluebird.promisify(entityClass.list$, {
+      context: entity
+    });
+    entityClass.asyncLoad$ = Bluebird.promisify(entityClass.load$, {
+      context: entity
+    });
+    entityClass.asyncRemove$ = Bluebird.promisify(entityClass.remove$, {
+      context: entity
+		});
+		
+    return reply();
   });
 
   return { name: "Entities" };
