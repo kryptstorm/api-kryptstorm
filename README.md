@@ -105,4 +105,4 @@ State what the license is and how to find the text version of the license.
 
 `docker run -d --restart always -p 9999:9999 -v $(pwd)/code:/code --link kryptstorm_mongo:kryptstorm_mongo -e MONGO_HOST=kryptstorm_mongo -e MONGO_PORT=27017 -e MONGO_DATABASE=kryptstorm -e PORT=9999 --name kryptstorm_api kryptstorm/node6:latest npm run start-dev`
 
-`docker run -d --link kryptstorm_mongo:mongo -p 8081:8081 mongo-express`
+`docker run -d --restart always -p 8081:8081 --link kryptstorm_mongo:mongo mongo-express`

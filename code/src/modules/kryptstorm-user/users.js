@@ -28,8 +28,9 @@ export default function Users() {
   });
 
   this.add("users:find_all", function usersFindAll(args, reply) {
-    this.Entity$.users
-      .asyncList$({ returnFields: ["id", "username"] })
+    this.Enities$
+      .fixMake$("mongo", "kryptstorm", "users")
+      .asyncList$({ fields$: ["id", "username"] })
       .then(rows => reply(null, { data$: rows }))
       .catch(reply);
   });
