@@ -11,8 +11,26 @@ if (process.env.NODE_ENV !== "development") {
   process.exit(0);
 }
 
+const faker = (number = 254) => {
+  let result = [],
+    usernames = [],
+		emails = [];
+		
+  while (number > 0) {
+		
+	}
+};
+
 /** All services is ready, now we handle http connection */
-App.ready(() => {
-  console.log("ready");
-  process.exit(0);
-});
+App.ready(() =>
+  App.Services$.actAsync("entities:run").then(() => {
+    const Users = App.Entity$.users;
+    Users.username = "kryptstorm";
+    Users.email = "admin@kryptstorm.com";
+    Users.status = 1;
+    Users.asyncSave$({ returnFields: ["id", "username"] }, false).then(rows => {
+      console.log(rows);
+      process.exit(0);
+    });
+  })
+);
