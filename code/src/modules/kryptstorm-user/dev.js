@@ -69,17 +69,15 @@ const faker = (entity, number) => {
 
 /** All services is ready, now we handle http connection */
 App.ready(() =>
-  App.Services$.actAsync("entities:run").then(() => {
-    Bluebird.all(
-      faker(App.Enities$.fixMake$("mongo", "kryptstorm", "users"), number)
-    )
-      .then(() => {
-        console.log(`Insert ${number} users.`);
-        process.exit(0);
-      })
-      .catch(err => {
-        console.log(err.message);
-        process.exit(0);
-      });
-  })
+  Bluebird.all(
+    faker(App.Enities$.fixMake$("mongo", "kryptstorm", "users"), number)
+  )
+    .then(() => {
+      console.log(`Insert ${number} users.`);
+      process.exit(0);
+    })
+    .catch(err => {
+      console.log(err.message);
+      process.exit(0);
+    })
 );

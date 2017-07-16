@@ -10,11 +10,7 @@ export default function Users() {
   const { actAsync } = this.Services$;
 
   this.add("init:Users", function initUsers(args, reply) {
-    /** First, register entity for this service */
-    actAsync("entities:add", {
-      entity: { users: ["mongo", "kryptstorm", "users"] }
-    })
-      .then(() => actAsync("http:save_routes", { routes }))
+    actAsync("http:save_routes", { routes })
       /**
 			 * Your are in promise chain, so just write .then(() => reply()) will throw warning
 			 * Warning: a promise was created in a handler at xxx/xxx/xxx.js but was not returned from it, see http://goo.gl/rRqMUw
