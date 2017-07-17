@@ -35,7 +35,7 @@ const faker = (entity, number) => {
       password: Bcrypt.hashSync("123456", 12),
       status: Math.floor(Math.random() * 4),
       createdAt: Faker.date.past(),
-      updateAt: Faker.date.recent()
+      updatedAt: Faker.date.recent()
     };
 
     if (

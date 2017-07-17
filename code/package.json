@@ -38,6 +38,7 @@
     "randomstring": "^1.1.5",
     "seneca": "^3.4.1",
     "seneca-entity": "^2.0.2",
-    "seneca-mongo-store": "^1.1.0"
+    "seneca-mongo-store": "^1.1.0",
+    "validator": "^8.0.0"
   }
 }

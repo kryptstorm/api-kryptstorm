@@ -6,6 +6,8 @@ import MethodOverride from "method-override";
 import _ from "lodash";
 import Config from "config";
 
+let defaultPagination = { limit: 20, skip: 0 };
+
 /**
  * Example routes
  * const routes = {'get:/user': { pattern: 'user:find_all', roles: [] }}
@@ -14,7 +16,14 @@ import Config from "config";
  * @param Object { withDefaultConfig = '', isDebug = false } 
  * @returns Object
  */
-export default function Http({ withDefaultConfig = true, isDebug = false }) {
+export default function Http({
+  withDefaultConfig = true,
+  isDebug = false,
+  pagination = {}
+}) {
+  /** Overwrite default config */
+  _.assign(defaultPagination, _.pick(pagination, _.keys(defaultPagination)));
+
   const { actAsync } = this.Services$;
   let server,
     serverRoutes = {},
@@ -147,7 +156,7 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
       /** route can not be blank */
       if (!route) return console.log("Routes can not e blank");
 
-      const methodAndUrl = route.split(":");
+      const methodAndUrl = route.split("::");
       const method = methodAndUrl[0],
         url = methodAndUrl[1];
       /** route must contain method and url with format _method_:_url_ */
@@ -171,7 +180,7 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
         return console.log(`Pattern [${pattern}] has not been registered.`);
 
       server[method](url, (req, res) =>
-        actAsync(pattern, {})
+        actAsync(pattern, _getPayload(req))
           .then(
             ({
               errorCode$ = "ERROR_NONE",
@@ -248,7 +257,7 @@ export default function Http({ withDefaultConfig = true, isDebug = false }) {
 
 const _getPayload = req => {
   const { query = {}, body = {}, params = {}, method } = req;
-  let { condition, limit, page, orderBy, asc, token = "" } = query;
+  let { limit, page, sortBy, asc, token = "" } = query;
 
   let _payload = {};
 
@@ -262,10 +271,16 @@ const _getPayload = req => {
       _payload.attributes = _.isObject(body) ? body : {};
       break;
     case "GET":
-      _payload.condition = _prepareCondition(condition);
-      _payload.order = _prepareOrder(orderBy, asc);
-      _payload.pagination = _preparePagination(limit, page);
+      _payload.query = _preapreQuery(query, [
+        "limit",
+        "page",
+        "sortBy",
+        "asc",
+        "token"
+      ]);
+      _payload.sort = _prepareSort(sortBy, asc);
       _payload.params = params;
+      _.assign(_payload, _preparePagination(limit, page));
       break;
     case "PUT":
       _payload.params = params;
@@ -279,23 +294,26 @@ const _getPayload = req => {
   return _payload;
 };
 
-const _prepareCondition = (condition = {}) => {
-  if (!_.isObject(condition) || _.isEmpty(condition)) {
+const _preapreQuery = (query = {}, excludeFields) => {
+  /** Return empty object if query have invalid type */
+  if (!_.isObject(query) || _.isEmpty(query)) {
     return {};
   }
+  /** Return full query data if excludeFields is not an array or is empty */
+  if (_.isEmpty(excludeFields) || !_.isArray(excludeFields)) return query;
 
-  return condition;
+  return _.omit(query, excludeFields);
 };
 
-const _prepareOrder = (orderBy = "id", asc) => {
-  if (!_.isEmpty(orderBy) && _.isString(orderBy)) {
-    return { [orderBy]: asc == 1 ? 1 : -1 };
+const _prepareSort = (sortBy = "id", asc) => {
+  if (!_.isEmpty(sortBy) && _.isString(sortBy)) {
+    return { [sortBy]: asc == 1 ? 1 : -1 };
   }
   return { id: -1 };
 };
 
 const _preparePagination = (limit, page) => {
-  let pagination = { limit: Config.get("api.perPageLimit"), skip: 0 };
+  let pagination = _.assign({}, defaultPagination);
 
   limit = parseInt(limit, 10);
   page = parseInt(page, 10);

@@ -7,7 +7,8 @@ module.exports = {
     },
     isDebug: true,
     httpVerbs: ["get", "post", "put", "delete"],
-    perPageLimit: 20
+    limitRow: 20,
+    maxRow: 500
   },
   mongo: {
     name: process.env.MONGO_DATABASE,

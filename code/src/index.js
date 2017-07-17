@@ -32,7 +32,7 @@ App.use("entity");
 /** Kryptstorm Service */
 App.use(Services);
 /** Kryptstorm Entities */
-App.use(Enitties);
+App.use(Enitties, { query: { limit$: Config.get("api.limitRow") } });
 /** Kryptstorm Http */
 App.use(Https, { isDebug: Config.get("api.isDebug") });
 

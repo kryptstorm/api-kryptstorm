@@ -2,14 +2,19 @@
 import Bluebird from "bluebird";
 import _ from "lodash";
 
-export default function Entities() {
+let defaultQuery = { limit$: 20, skip$: 0, fields$: ["id"] };
+
+export default function Entities({ query = {} }) {
+  /** Overwrite default config */
+  _.assign(defaultQuery, _.pick(query, _.keys(defaultQuery)));
+
   const entityClass = this.private$.exports.Entity.prototype,
     self = this;
   let Entity$ = {};
 
   /** Defined entity async method  */
   const asyncFunc = entity => ({
-    asyncSave$: (options = {}, isNative = false) => {
+    asyncSave$: (options = {}, returnEntity = false) => {
       /** Ensure params have valid type */
       if (!_.isObject(options)) options = {};
 
@@ -19,7 +24,7 @@ export default function Entities() {
       });
 
       /** Return enity instead of attribute object */
-      if (isNative) return asyncSave$();
+      if (returnEntity) return asyncSave$();
 
       return asyncSave$().then(row => {
         const data = row.data$();
@@ -37,62 +42,41 @@ export default function Entities() {
         return Bluebird.resolve(result);
       });
     },
-    asyncList$: (query = {}, isNative = false) => {
+    asyncList$: (query = {}, returnEntity = false) => {
       /** Ensure params have valid type */
       if (!_.isObject(query)) query = {};
 
-      const defaultQuery = { limit$: 10, skip$: 0, fields$: ["id"] };
       const asyncList$ = Bluebird.promisify(entityClass.list$, {
         context: entity
       });
       const resolveQuery = _.assign({}, defaultQuery, query);
 
       /** Return enity instead of attribute object */
-      if (isNative) return asyncList$(resolveQuery);
+      if (returnEntity) return asyncList$(resolveQuery);
 
       return asyncList$(resolveQuery).then(rows => {
         let result = [];
-        _.each(rows, row => {
-          const data = row.data$();
-          let tmp = {};
-          /** Return all field, exclude system field - postfix with $ */
-          _.each(data, (v, k) => {
-            if (!_.includes(k, "$")) tmp[k] = v;
-          });
-
-          /** Return data */
-          result.push(tmp);
-        });
+        _.each(rows, row => result.push(_formatRow(row.data$())));
         return Bluebird.resolve(result);
       });
     },
-    asyncLoad$: (id = "", options = {}, isNative = false) => {
+    asyncLoad$: (query = {}, returnEntity = false) => {
       /** Ensure params have valid type */
-      if (!_.isObject(id)) id = "";
-      if (!_.isObject(options)) options = {};
+      if (!_.isObject(query)) query = {};
 
-      const { returnFields = [] } = options;
       const asyncLoad$ = Bluebird.promisify(entityClass.load$, {
         context: entity
       });
+      const resolveQuery = _.assign({}, defaultQuery, query);
 
       /** Return enity instead of attribute object */
-      if (isNative) return asyncLoad$(id);
+      if (returnEntity) return asyncLoad$(resolveQuery);
 
-      return asyncLoad$(id).then(row => {
+      return asyncLoad$(resolveQuery).then(row => {
         const data = row.data$();
         let result = {};
 
-        /** If returnFields is defined, only retrieve field on returnFields */
-        if (_.isArray(returnFields) && !_.isEmpty(returnFields)) {
-          return Bluebird.resolve(_.pick(data, returnFields));
-        }
-        /** Return all field, exclude system field - postfix with $ */
-        _.each(data, (v, k) => {
-          if (!_.includes(k, "$")) result[k] = v;
-        });
-
-        return Bluebird.resolve(result);
+        return Bluebird.resolve(_formatRow(data));
       });
     },
     asyncRemove$: Bluebird.promisify(entityClass.remove$, {
@@ -120,3 +104,9 @@ export default function Entities() {
 
   return { name: "Entities" };
 }
+
+const _formatRow = row => {
+  let result = {};
+  _.each(row, (v, c) => (!_.includes(c, "$") ? (result[c] = v) : result));
+  return result;
+};
