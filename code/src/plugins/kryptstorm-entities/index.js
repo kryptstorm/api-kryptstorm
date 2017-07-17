@@ -7,6 +7,7 @@ export default function Entities() {
     self = this;
   let Entity$ = {};
 
+  /** Defined entity async method  */
   const asyncFunc = entity => ({
     asyncSave$: (options = {}, isNative = false) => {
       /** Ensure params have valid type */
@@ -99,19 +100,21 @@ export default function Entities() {
     })
   });
 
-  entityClass.fixMake$ = function fixMake$() {
-    const entity = entityClass.make$.call(this);
-    return _.assign(entity, asyncFunc(entity));
-  };
-
-  this.decorate("Enities$", {
-    fixMake$: (zone = null, base = null, name = null) => {
-      const entity = this.make$(zone, base, name);
-      return _.assign(entity, asyncFunc(entity));
-    }
-  });
-
   this.add("init:Entities", function initEntities(args, reply) {
+    /** Inject async method to all instance */
+    entityClass.fixMake$ = function fixMake$() {
+      const entity = entityClass.make$.call(this);
+      return _.assign(entity, asyncFunc(entity));
+    };
+
+    /** Decorate fixMake method to ensure entity async method will availabel */
+    this.decorate("Enities$", {
+      fixMake$: (zone = null, base = null, name = null) => {
+        const entity = this.make$(zone, base, name);
+        return _.assign(entity, asyncFunc(entity));
+      }
+    });
+
     return reply();
   });
 
