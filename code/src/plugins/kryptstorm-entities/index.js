@@ -18,19 +18,69 @@ export default function Entities({ query = {} }) {
   let Entity$ = {};
 
   this.add("init:Entities", function initEntities(args, reply) {
-    /** Inject async method to all instance */
-    entityClass.makeWithAsync$ = function makeWithAsync$() {
-      const entity = entityClass.make$.call(this);
-      return _.assign(entity, asyncFunc(entity, entityClass));
+    entityClass.asyncSave$ = function asyncSave$(
+      query = {},
+      returnEntity = false
+    ) {
+      /** Ensure params have valid type */
+      if (!_.isObject(query)) query = {};
+
+      const resolveQuery = _.assign({}, defaultQuery, query);
+      const _asyncSave$ = Bluebird.promisify(entityClass.save$, {
+        context: this
+      });
+
+      /** Return enity instead of attribute object */
+      if (returnEntity) return _asyncSave$();
+
+      return _asyncSave$().then(row =>
+        Bluebird.resolve(
+          _formatRow(row ? row.data$() : {}, resolveQuery.fields$)
+        )
+      );
     };
 
-    /** Decorate makeWithAsync method to ensure entity async method will availabel */
-    this.decorate("Enities$", {
-      makeWithAsync$: (zone = null, base = null, name = null) => {
-        const entity = this.make$(zone, base, name);
-        return _.assign(entity, asyncFunc(entity, entityClass));
-      }
-    });
+    entityClass.asyncList$ = function asyncList$(
+      query = {},
+      returnEntity = false
+    ) {
+      /** Ensure params have valid type */
+      if (!_.isObject(query)) query = {};
+
+      const resolveQuery = _.assign({}, defaultQuery, query);
+      const _asyncList$ = Bluebird.promisify(entityClass.list$, {
+        context: this
+      });
+
+      /** Return enity instead of attribute object */
+      if (returnEntity) return _asyncList$(resolveQuery);
+
+      return _asyncList$(resolveQuery).then(rows => {
+        let result = [];
+        _.each(rows, row => result.push(_formatRow(row ? row.data$() : {})));
+        return Bluebird.resolve(result);
+      });
+    };
+
+    entityClass.asyncLoad$ = function asyncLoad$(
+      query = {},
+      returnEntity = false
+    ) {
+      /** Ensure params have valid type */
+      if (!_.isObject(query)) query = {};
+
+      const resolveQuery = _.assign({}, defaultQuery, query);
+      const _asyncLoad$ = Bluebird.promisify(entityClass.load$, {
+        context: this
+      });
+
+      /** Return enity instead of attribute object */
+      if (returnEntity) return _asyncLoad$(resolveQuery);
+
+      return _asyncLoad$(resolveQuery).then(row =>
+        Bluebird.resolve(_formatRow(row ? row.data$() : {}))
+      );
+    };
 
     /** Register validator */
     _.assign(ValidateJS.validators, _validators(this));
@@ -69,7 +119,7 @@ const _validators = App => {
       attributesInput
     ) => {
       return new ValidateJS.Promise((resolve, reject) => {
-        /** Check validatorParams must be params of makeWithAsync$ */
+        /** Check validatorParams must be params of make$ */
         if (!_.isArray(validatorParams) || validatorParams.length !== 3) {
           return resolve(
             ValidateJS.format(
@@ -82,7 +132,7 @@ const _validators = App => {
           );
         }
 
-        App.Enities$.makeWithAsync$
+        App.make$
           .apply(null, validatorParams)
           .asyncLoad$({ [attributeField]: attributeValue })
           .then(
@@ -104,60 +154,3 @@ const _validators = App => {
     }
   };
 };
-
-/** Defined entity async method  */
-const asyncFunc = (entity, entityClass) => ({
-  asyncSave$: (query = {}, returnEntity = false) => {
-    /** Ensure params have valid type */
-    if (!_.isObject(query)) query = {};
-
-    const asyncSave$ = Bluebird.promisify(entityClass.save$, {
-      context: entity
-    });
-    const resolveQuery = _.assign({}, defaultQuery, query);
-
-    /** Return enity instead of attribute object */
-    if (returnEntity) return asyncSave$();
-
-    return asyncSave$().then(row =>
-      Bluebird.resolve(_formatRow(row ? row.data$() : {}, resolveQuery.fields$))
-    );
-  },
-  asyncList$: (query = {}, returnEntity = false) => {
-    /** Ensure params have valid type */
-    if (!_.isObject(query)) query = {};
-
-    const asyncList$ = Bluebird.promisify(entityClass.list$, {
-      context: entity
-    });
-    const resolveQuery = _.assign({}, defaultQuery, query);
-
-    /** Return enity instead of attribute object */
-    if (returnEntity) return asyncList$(resolveQuery);
-
-    return asyncList$(resolveQuery).then(rows => {
-      let result = [];
-      _.each(rows, row => result.push(_formatRow(row ? row.data$() : {})));
-      return Bluebird.resolve(result);
-    });
-  },
-  asyncLoad$: (query = {}, returnEntity = false) => {
-    /** Ensure params have valid type */
-    if (!_.isObject(query)) query = {};
-
-    const asyncLoad$ = Bluebird.promisify(entityClass.load$, {
-      context: entity
-    });
-    const resolveQuery = _.assign({}, defaultQuery, query);
-
-    /** Return enity instead of attribute object */
-    if (returnEntity) return asyncLoad$(resolveQuery);
-
-    return asyncLoad$(resolveQuery).then(row =>
-      Bluebird.resolve(_formatRow(row ? row.data$() : {}))
-    );
-  },
-  asyncRemove$: Bluebird.promisify(entityClass.remove$, {
-    context: entity
-  })
-});

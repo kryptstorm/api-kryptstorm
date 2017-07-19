@@ -37,7 +37,7 @@ export const getToken = () =>
 export const getExpired = () => new Date(new Date().getTime() + 604800000);
 
 /** Validation schema*/
-const ruleOnDefault = {
+const rulesOnCreate = {
   username: {
     presence: true,
     unique: ["mongo", "kryptstorm", "users"],
@@ -55,11 +55,19 @@ const ruleOnDefault = {
   }
 };
 
-const ruleOnRegister = _.assign({}, ruleOnDefault, {
+const rulesOnRegister = _.assign({}, rulesOnCreate, {
   confirmPassword: { equality: "password" }
 });
 
+const rulesOnUpdate = {
+  status: {
+    presence: true,
+    inclusion: [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED]
+  }
+};
+
 export default {
-  onDefault: attributes => ValidateJS.async(attributes, ruleOnDefault),
-  onRegister: attributes => ValidateJS.async(attributes, ruleOnRegister)
+  onCreate: attributes => ValidateJS.async(attributes, rulesOnCreate),
+  onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate),
+  onRegister: attributes => ValidateJS.async(attributes, rulesOnRegister)
 };
