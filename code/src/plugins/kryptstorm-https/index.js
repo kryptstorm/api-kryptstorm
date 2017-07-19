@@ -127,21 +127,7 @@ export default function Http({
     if (!_.isEmpty(mwBefore)) {
       _.each(mwBefore, pattern =>
         server.use((req, res, next) =>
-          actAsync(pattern, {})
-            .then(
-              ({
-                errorCode$ = "ERROR_NONE",
-                message$ = "",
-                data$ = {},
-                meta$
-              }) => {
-                if (errorCode$ !== "ERROR_NONE") {
-                  return res.json({ errorCode: errorCode$, message: message$ });
-                }
-                return next();
-              }
-            )
-            .catch(error => next(error))
+          actAsync(pattern, {}).then(_mwHandler).catch(error => next(error))
         )
       );
     }
@@ -157,7 +143,7 @@ export default function Http({
       if (!route) return console.log("Routes can not e blank");
 
       const methodAndUrl = route.split("::");
-      const method = methodAndUrl[0],
+      const method = _.toLower(methodAndUrl[0]),
         url = methodAndUrl[1];
       /** route must contain method and url with format _method_:_url_ */
       if (!method || !url)
@@ -179,15 +165,24 @@ export default function Http({
       if (!this.has(pattern))
         return console.log(`Pattern [${pattern}] has not been registered.`);
 
-      server[method](url, (req, res) =>
+      server[method](url, (req, res, next) =>
         actAsync(pattern, _getPayload(req))
           .then(
             ({
               errorCode$ = "ERROR_NONE",
               message$ = "",
               data$ = {},
-              meta$
+              meta$ = {},
+              errors$
             }) => {
+              /** 
+							 * If error$ is defined
+							 * 1. Or system error 
+							 * 2. Or validation error
+							 */
+              if (!_.isUndefined(errors$)) return next(errors$);
+
+              /** If errorCode$ is not equal to ERROR_NONE, response error and error message */
               if (errorCode$ !== "ERROR_NONE") {
                 return res.json({ errorCode: errorCode$, message: message$ });
               }
@@ -207,21 +202,7 @@ export default function Http({
     if (!_.isEmpty(mwAfter)) {
       _.each(mwAfter, pattern =>
         server.use((req, res, next) =>
-          actAsync(pattern, {})
-            .then(
-              ({
-                errorCode$ = "ERROR_NONE",
-                message$ = "",
-                data$ = {},
-                meta$
-              }) => {
-                if (errorCode$ !== "ERROR_NONE") {
-                  return res.json({ errorCode: errorCode$, message: message$ });
-                }
-                return next();
-              }
-            )
-            .catch(error => next(error))
+          actAsync(pattern, {}).then(_mwHandler).catch(error => next(error))
         )
       );
     }
@@ -229,24 +210,10 @@ export default function Http({
     /** Default config */
     if (withDefaultConfig) {
       /** Handle 404 error */
-      server.use((req, res, next) => {
-        return res.status(404).json({
-          errorCode: "ERROR_NOT_FOUND",
-          message: `The requested URL [${req.url}] was not found on this server`
-        });
-      });
+      server.use(_http404);
 
       /** Handle system error */
-      server.use((err, req, res, next) => {
-        if (err) {
-          const message = isDebug
-            ? err.message
-            : "Server encountered an error while trying to handle request";
-          return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
-        }
-
-        return next(err);
-      });
+      server.use(_httpError.bind(this, isDebug));
     }
 
     return reply(null, { data$: server });
@@ -254,6 +221,27 @@ export default function Http({
 
   return { name: "Http" };
 }
+
+const _mwHandler = ({
+  errorCode$ = "ERROR_NONE",
+  message$ = "",
+  data$ = {},
+  meta$ = {},
+  errors$
+}) => {
+  /** 
+	 * If error$ is defined
+	 * 1. Or system error 
+	 * 2. Or validation error
+	 */
+  if (!_.isUndefined(errors$)) return next(errors$);
+
+  /** If errorCode$ is not equal to ERROR_NONE, response error and error message */
+  if (errorCode$ !== "ERROR_NONE") {
+    return res.json({ errorCode: errorCode$, message: message$ });
+  }
+  return next();
+};
 
 const _getPayload = req => {
   const { query = {}, body = {}, params = {}, method } = req;
@@ -325,4 +313,28 @@ const _preparePagination = (limit, page) => {
     pagination.skip = (page - 1 < 0 ? page : page - 1) * limit;
   }
   return pagination;
+};
+
+const _http404 = (req, res, next) => {
+  return res.status(404).json({
+    errorCode: "ERROR_NOT_FOUND",
+    message: `The requested URL [${req.url}] was not found on this server`
+  });
+};
+
+const _httpError = (isDebug, err, req, res, next) => {
+  /** Validate error, err will be object of error */
+  if (err && !_.isError(err) && _.isObject(err)) {
+    return res.json({
+      errorCode: "VALIDATION_FAILED",
+      message: "Validation failed. Please try again.",
+      errors: err
+    });
+  }
+
+  /** System error */
+  const message = isDebug
+    ? err.message
+    : "Server encountered an error while trying to handle request";
+  return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
 };

@@ -39,6 +39,7 @@
     "seneca": "^3.4.1",
     "seneca-entity": "^2.0.2",
     "seneca-mongo-store": "^1.1.0",
+    "validate.js": "^0.11.1",
     "validator": "^8.0.0"
   }
 }
