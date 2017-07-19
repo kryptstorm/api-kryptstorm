@@ -28,7 +28,6 @@ export default function Users() {
     "put::/users/:id": "users:update_by_id"
   };
   const { actAsync } = this.Services$;
-  const User = this.make$("mongo", "kryptstorm", "users");
 
   this.add("init:Users", function initUsers(args, reply) {
     actAsync("http:save_routes", { routes })
@@ -100,7 +99,7 @@ export default function Users() {
           cleanAttributes.fields$ = () => _fields$;
 
           /** Create new instance */
-          let _user = User.make$();
+          let _user = this.make$("mongo", "kryptstorm", "users");
           /** Set attributes */
           _.assign(_user, cleanAttributes);
 
@@ -126,7 +125,8 @@ export default function Users() {
     _.assign(_query, { limit$: limit, skip$: limit });
 
     /** Load data */
-    return User.asyncList$(_query)
+    return this.make$("mongo", "kryptstorm", "users")
+      .asyncList$(_query)
       .then(rows => reply(null, { data$: rows }))
       .catch(err => reply(null, { errors$: err }));
   });
@@ -155,7 +155,8 @@ export default function Users() {
     let _query = { fields$: PUBLICK_FIELDS, id: params.id };
 
     /** Load data */
-    return User.asyncLoad$(_query)
+    return this.make$("mongo", "kryptstorm", "users")
+      .asyncLoad$(_query)
       .then(row => {
         /** User with id is not found. */
         if (!row || _.isEmpty(row)) {
@@ -205,7 +206,8 @@ export default function Users() {
 		 * Load data
 		 * and you want row is entity instead of array of attributes
 		 */
-    return User.asyncLoad$(_query, true)
+    return this.make$("mongo", "kryptstorm", "users")
+      .asyncLoad$(_query, true)
       .then(user => {
         /** User with id is not found. */
         if (!user || !user.id) {
@@ -213,7 +215,7 @@ export default function Users() {
             errorCode$: "DATA_NOT_FOUND",
             message$: `User (with id ${params.id}) is not found. May be this user has been deleted.`
           });
-				}
+        }
 
         return (
           /** First, validate */
