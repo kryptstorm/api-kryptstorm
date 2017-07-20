@@ -25,7 +25,8 @@ export default function Users() {
     "post::/users": "users:create",
     "get::/users": "users:find_all",
     "get::/users/:id": "users:find_by_id",
-    "put::/users/:id": "users:update_by_id"
+    "put::/users/:id": "users:update_by_id",
+    "delete::/users/:id": "users:delete_by_id"
   };
   const { actAsync } = this.Services$;
 
@@ -93,7 +94,7 @@ export default function Users() {
           cleanAttributes.createdAt = new Date();
 
           /**
-				 * Defined function will return save fields
+				 * Defined function will return all fields will be saved
 				 * @see https://github.com/senecajs/seneca-mongo-store/blob/v1.1.0/mongo-store.js#L188
 				 */
           cleanAttributes.fields$ = () => _fields$;
@@ -159,7 +160,7 @@ export default function Users() {
       .asyncLoad$(_query)
       .then(row => {
         /** User with id is not found. */
-        if (!row || _.isEmpty(row)) {
+        if (_.isEmpty(row)) {
           return reply(null, {
             errorCode$: "DATA_NOT_FOUND",
             message$: `User (with id ${params.id}) is not found. May be this user has been deleted.`
@@ -171,7 +172,7 @@ export default function Users() {
   });
 
   this.add("users:update_by_id", function usersFindById(args, reply) {
-    let { params = {}, attributes } = args;
+    let { params = {}, attributes = {} } = args;
 
     /** This is a stupid action if you allow user update a user without attributes */
     if (_.isEmpty(attributes)) {
@@ -262,5 +263,35 @@ export default function Users() {
       .catch(err => reply(null, { errors$: err }));
   });
 
+  this.add("users:delete_by_id", function usersFindById(args, reply) {
+    let { params = {} } = args;
+
+    /** If id is not exist */
+    if (!params.id) {
+      return reply(null, {
+        errorCode$: "DATA_NOT_FOUND",
+        message$: "User is not found. May be this user has been deleted."
+      });
+    }
+
+    /** If id is not valid mongoID */
+    if (!Validator.isMongoId(params.id)) {
+      reply(null, {
+        errorCode$: "INVALID_PARAMS",
+        message$: `The user with id (${String(
+          params.id
+        )}) you provided does not exist.`
+      });
+    }
+
+    /** Build query */
+    let _query = { fields$: PUBLICK_FIELDS, id: params.id };
+
+    /** Remove user */
+    return this.make$("mongo", "kryptstorm", "users")
+      .asyncRemove$(_query)
+      .then(row => reply(null, { data$: row }))
+      .catch(err => reply(null, { errors$: err }));
+  });
   return { name: "Users" };
 }

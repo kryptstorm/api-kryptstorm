@@ -31,12 +31,10 @@ export default function Entities({ query = {} }) {
       });
 
       /** Return enity instead of attribute object */
-      if (returnEntity) return _asyncSave$();
+      if (returnEntity) return _asyncSave$({});
 
       return _asyncSave$().then(row =>
-        Bluebird.resolve(
-          _formatRow(row ? row.data$() : {}, resolveQuery.fields$)
-        )
+        Bluebird.resolve(_formatRow(row, resolveQuery.fields$))
       );
     };
 
@@ -57,7 +55,7 @@ export default function Entities({ query = {} }) {
 
       return _asyncList$(resolveQuery).then(rows => {
         let result = [];
-        _.each(rows, row => result.push(_formatRow(row ? row.data$() : {})));
+        _.each(rows, row => result.push(_formatRow(row)));
         return Bluebird.resolve(result);
       });
     };
@@ -78,8 +76,35 @@ export default function Entities({ query = {} }) {
       if (returnEntity) return _asyncLoad$(resolveQuery);
 
       return _asyncLoad$(resolveQuery).then(row =>
-        Bluebird.resolve(_formatRow(row ? row.data$() : {}))
+        Bluebird.resolve(_formatRow(row))
       );
+    };
+
+    entityClass.asyncRemove$ = function asyncRemove$(query = {}) {
+      /** Ensure params have valid type */
+      if (!_.isObject(query)) return Bluebird.resolve({});
+      const returnFields = _.assign({}, defaultQuery, query).fields$;
+
+      const resolveQuery = _.assign(
+        { all$: false, load$: true },
+        _.omit(query, ["fields$"])
+      );
+      /** fields is custom field, we should delete it before run remove command */
+      delete query.fields$;
+      const _asyncRemove$ = Bluebird.promisify(entityClass.remove$, {
+        context: this
+      });
+
+      return _asyncRemove$(resolveQuery).then(row => {
+        /** Delete many fields */
+        if (resolveQuery.all$) return Bluebird.resolve([]);
+        /** Delete 1 row and load data after deleted */
+        if (resolveQuery.load$) {
+          return Bluebird.resolve(_formatRow(row, returnFields));
+        }
+        /** Delete 1 row and keep slient */
+        return Bluebird.resolve({});
+      });
     };
 
     /** Register validator */
@@ -91,9 +116,18 @@ export default function Entities({ query = {} }) {
   return { name: "Entities" };
 }
 
-const _formatRow = (row, fields$) => {
-  let result = {};
-  if (!row) return result;
+const _formatRow = (entity, fields$) => {
+  let result = {},
+    row;
+  /** Invalid entity */
+  if (!entity || !_.isObject(entity)) return result;
+  /** entity is seneca entity */
+  if (typeof entity.data$ === "function") {
+    row = entity.data$();
+  } else {
+    /** Result of remove function is a mongo object, convert it to entity-like */
+    row = _.assign(entity, { id: entity._id });
+  }
 
   const _row = _.isArray(fields$) ? _.pick(row, fields$) : row;
   _.each(_row, (v, c) => (!_.includes(c, "$") ? (result[c] = v) : result));
