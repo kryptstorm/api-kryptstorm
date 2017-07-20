@@ -9,107 +9,147 @@ ValidateJS.Promise = Bluebird;
 /** Default query */
 let defaultQuery = { limit$: 20, skip$: 0, fields$: ["id"] };
 
-export default function Entities({ query = {} }) {
+export default function Entities({ queryConfig = {} }) {
   /** Overwrite default config */
-  _.assign(defaultQuery, _.pick(query, _.keys(defaultQuery)));
+  _.assign(defaultQuery, _.pick(queryConfig, _.keys(defaultQuery)));
 
-  const entityClass = this.private$.exports.Entity.prototype,
-    self = this;
-  let Entity$ = {};
+  const entityClass = this.private$.exports.Entity.prototype;
+
+  /**
+	 * Save data by async method
+	 * Assume you have an entity, let enity = this.make$("mongo", "kryptstorm", "users");
+	 * 1. If enity have a function fields$ => entity only save all fields return by this function
+	 * 2. If query have fields$ (type is array) => after save data successfully, only fields on this array will be return
+	 * 3. If returnEntity is true, enity will be return instead of attributes object
+	 * 
+	 * query can have 
+	 * 1. fields$ (default is ["id"]) only return fields on this param 
+	 * @param {object} query defined query of entity
+	 * @param {bool} returnEntity if true, result is entity instead of attributes object
+	 * 
+	 */
+  entityClass.asyncSave$ = function asyncSave$(
+    query = {},
+    returnEntity = false
+  ) {
+    /** Ensure params have valid type */
+    if (!_.isObject(query)) query = {};
+
+    const resolveQuery = _.assign({}, defaultQuery, query);
+    const _asyncSave$ = Bluebird.promisify(entityClass.save$, {
+      context: this
+    });
+
+    /** Return enity instead of attribute object */
+    if (returnEntity) return _asyncSave$();
+
+    return _asyncSave$().then(row =>
+      Bluebird.resolve(_formatRow(row, resolveQuery.fields$))
+    );
+  };
+
+	/**
+	 * Get list of data by async method
+	 * query can have 
+	 * 1. fields$ (default is ["id"]) only return fields on this param
+	 * 2. limit$ number of rows should be return
+	 * 3. skip$
+	 * 4. sort$ {field_1: -1, field_2: 1}
+	 * Other attributes is what seneca-mongo put to mongo
+	 * 
+	 * @param {object} query defined query of entity
+	 * @param {bool} returnEntity if true, result is entity instead of attributes object
+	 */
+  entityClass.asyncList$ = function asyncList$(
+    query = {},
+    returnEntity = false
+  ) {
+    /** Ensure params have valid type */
+    if (!_.isObject(query)) query = {};
+
+    const resolveQuery = _.assign({}, defaultQuery, query);
+    const _asyncList$ = Bluebird.promisify(entityClass.list$, {
+      context: this
+    });
+
+    /** Return enity instead of attribute object */
+    if (returnEntity) return _asyncList$(resolveQuery);
+
+    return _asyncList$(resolveQuery).then(rows => {
+      let result = [];
+      _.each(rows, row => result.push(_formatRow(row)));
+      return Bluebird.resolve(result);
+    });
+  };
+
+	/**
+	 * Get data by async method
+	 * query can have 
+	 * 1. fields$ (default is ["id"]) only return fields on this param 
+	 * 
+	 * @param {object} query defined query of entity
+	 * @param {bool} returnEntity if true, result is entity instead of attributes object
+	 */
+  entityClass.asyncLoad$ = function asyncLoad$(
+    query = {},
+    returnEntity = false
+  ) {
+    /** Ensure params have valid type */
+    if (!_.isObject(query)) query = {};
+
+    const resolveQuery = _.assign({}, defaultQuery, query);
+    const _asyncLoad$ = Bluebird.promisify(entityClass.load$, {
+      context: this
+    });
+
+    /** Return enity instead of attribute object */
+    if (returnEntity) return _asyncLoad$(resolveQuery);
+
+    return _asyncLoad$(resolveQuery).then(row =>
+      Bluebird.resolve(_formatRow(row))
+    );
+  };
+
+	/**
+	 * Remove data by async method
+	 * query can have
+	 * 1. all$ (default is false) Delete all fields match condition
+	 * 2. load$ (default is true) Return data after delete an entity
+	 * 3. fields (default is ["id"]) only return fields on this param. That is option provide by Kryptstorm
+	 * 
+	 * @param {object} query defined query of entity
+	 * @param {bool} returnEntity if true, result is entity instead of attributes object
+	 */
+  entityClass.asyncRemove$ = function asyncRemove$(query = {}) {
+    /** Ensure params have valid type */
+    if (!_.isObject(query)) return Bluebird.resolve({});
+    const returnFields = _.assign({}, defaultQuery, query).fields$;
+
+    const resolveQuery = _.assign(
+      { all$: false, load$: true },
+      _.omit(query, ["fields$"])
+    );
+    /** fields$ is custom field, we should delete it before run remove command */
+    delete query.fields$;
+    const _asyncRemove$ = Bluebird.promisify(entityClass.remove$, {
+      context: this
+    });
+
+    return _asyncRemove$(resolveQuery).then(row => {
+      /** Delete many fields */
+      if (resolveQuery.all$) return Bluebird.resolve([]);
+      /** Delete 1 row and load data after deleted */
+      if (resolveQuery.load$) {
+        return Bluebird.resolve(_formatRow(row, returnFields));
+      }
+      /** Delete 1 row and keep slient */
+      return Bluebird.resolve({});
+    });
+  };
 
   this.add("init:Entities", function initEntities(args, reply) {
-    entityClass.asyncSave$ = function asyncSave$(
-      query = {},
-      returnEntity = false
-    ) {
-      /** Ensure params have valid type */
-      if (!_.isObject(query)) query = {};
-
-      const resolveQuery = _.assign({}, defaultQuery, query);
-      const _asyncSave$ = Bluebird.promisify(entityClass.save$, {
-        context: this
-      });
-
-      /** Return enity instead of attribute object */
-      if (returnEntity) return _asyncSave$({});
-
-      return _asyncSave$().then(row =>
-        Bluebird.resolve(_formatRow(row, resolveQuery.fields$))
-      );
-    };
-
-    entityClass.asyncList$ = function asyncList$(
-      query = {},
-      returnEntity = false
-    ) {
-      /** Ensure params have valid type */
-      if (!_.isObject(query)) query = {};
-
-      const resolveQuery = _.assign({}, defaultQuery, query);
-      const _asyncList$ = Bluebird.promisify(entityClass.list$, {
-        context: this
-      });
-
-      /** Return enity instead of attribute object */
-      if (returnEntity) return _asyncList$(resolveQuery);
-
-      return _asyncList$(resolveQuery).then(rows => {
-        let result = [];
-        _.each(rows, row => result.push(_formatRow(row)));
-        return Bluebird.resolve(result);
-      });
-    };
-
-    entityClass.asyncLoad$ = function asyncLoad$(
-      query = {},
-      returnEntity = false
-    ) {
-      /** Ensure params have valid type */
-      if (!_.isObject(query)) query = {};
-
-      const resolveQuery = _.assign({}, defaultQuery, query);
-      const _asyncLoad$ = Bluebird.promisify(entityClass.load$, {
-        context: this
-      });
-
-      /** Return enity instead of attribute object */
-      if (returnEntity) return _asyncLoad$(resolveQuery);
-
-      return _asyncLoad$(resolveQuery).then(row =>
-        Bluebird.resolve(_formatRow(row))
-      );
-    };
-
-    entityClass.asyncRemove$ = function asyncRemove$(query = {}) {
-      /** Ensure params have valid type */
-      if (!_.isObject(query)) return Bluebird.resolve({});
-      const returnFields = _.assign({}, defaultQuery, query).fields$;
-
-      const resolveQuery = _.assign(
-        { all$: false, load$: true },
-        _.omit(query, ["fields$"])
-      );
-      /** fields is custom field, we should delete it before run remove command */
-      delete query.fields$;
-      const _asyncRemove$ = Bluebird.promisify(entityClass.remove$, {
-        context: this
-      });
-
-      return _asyncRemove$(resolveQuery).then(row => {
-        /** Delete many fields */
-        if (resolveQuery.all$) return Bluebird.resolve([]);
-        /** Delete 1 row and load data after deleted */
-        if (resolveQuery.load$) {
-          return Bluebird.resolve(_formatRow(row, returnFields));
-        }
-        /** Delete 1 row and keep slient */
-        return Bluebird.resolve({});
-      });
-    };
-
     /** Register validator */
     _.assign(ValidateJS.validators, _validators(this));
-
     return reply();
   });
 

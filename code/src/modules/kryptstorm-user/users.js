@@ -168,7 +168,10 @@ export default function Users() {
         }
         return reply(null, { data$: row });
       })
-      .catch(err => reply(null, { errors$: err }));
+      .catch(err => {
+        console.log(err);
+        return reply(null, { errors$: err });
+      });
   });
 
   this.add("users:update_by_id", function usersFindById(args, reply) {
