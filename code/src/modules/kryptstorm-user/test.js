@@ -34,21 +34,25 @@ const TestApp = fn =>
 const app = TestApp();
 
 describe("Kryptstorm Users", function() {
+  let UserCollection;
   before(done => {
     return app.ready(() => {
-      app
-        .make$("mongo", "kryptstorm", "users")
-        .asyncNative$()
-        .then(db => {
-          console.log(db.collection("kryptstorm_users"));
-          return done();
-        })
+      /** Defined user colection */
+      UserCollection = app.make$("mongo", "kryptstorm", "users");
+
+      /** Delete all document by node-mongo-native */
+      return UserCollection.asyncNative$()
+        .then(db =>
+          db
+            .collection("kryptstorm_users")
+            .removeMany()
+            .then(done.bind(app, null))
+        )
         .catch(done);
     });
   });
 
   it("Find all users", function(done) {
-    console.log("---------------");
     return done();
   });
 });
