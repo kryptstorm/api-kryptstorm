@@ -6,29 +6,29 @@ import MethodOverride from "method-override";
 import _ from "lodash";
 import Config from "config";
 
-let defaultPagination = { limit: 20, skip: 0 };
+let defaultOptions = {
+  withDefaultConfig: true,
+  isDebug: false,
+  queryConfig: { limit: 20, skip: 0 },
+  routes: {}
+};
 
 /**
  * Example routes
  * const routes = {'get:/user': { pattern: 'user:find_all', roles: [] }}
  * 
- * @export Http
- * @param Object { withDefaultConfig = '', isDebug = false } 
- * @returns Object
  */
-export default function Http({
-  withDefaultConfig = true,
-  isDebug = false,
-  pagination = {}
-}) {
-  /** Overwrite default config */
-  _.assign(defaultPagination, _.pick(pagination, _.keys(defaultPagination)));
+export default function Https(options) {
+  /** Register plugin options */
+  this.options({
+    Https: this.util.deepextend(defaultOptions, options)
+  });
+  /** Retrive options */
+  const { withDefaultConfig, isDebug, queryConfig } = this.options().Https;
 
-  const { actAsync } = this.Services$;
-  let server,
-    serverRoutes = {},
-    mwBefore = [],
-    mwAfter = [];
+  /** Plugin variable */
+  const asyncAct$ = this.asyncAct$;
+  let server;
 
   /** Init function */
   this.add("init:Http", function initHttp(args, reply) {
@@ -45,89 +45,25 @@ export default function Http({
     return reply();
   });
 
-  /** Add midleware to express before execute all route */
-  this.add("http:add_midleware, scenario:before", function addMidleware(
-    { pattern = "" },
-    reply
-  ) {
-    mwBefore.push(pattern);
-    return reply(null, mwBefore);
-  });
-
-  /** Add midleware to express after  execute all route */
-  this.add("http:add_midleware, scenario:after", function addMidleware(
-    { pattern = "" },
-    reply
-  ) {
-    mwAfter.push(pattern);
-    return reply(null, mwAfter);
-  });
-
-  /** Update route if it has alrady exist, add new if it is not exist */
-  this.add("http:save_route", function saveRoute(
-    { url = "", handler = {} },
-    reply
-  ) {
-    /** url must be a string */
-    if (!_.isString(url)) {
-      return reply(null, {
-        errorCode$: "HTTP_SAVE_ROUTE_INVALID_URL",
-        message$: `To inject route handler, url must be a string. You gave ${JSON.stringify(
-          url
-        )}`
-      });
-    }
-    /** handler must be an object */
-    if (!_.isObject(handler)) {
-      return reply(null, {
-        errorCode$: "HTTP_SAVE_ROUTE_INVALID_HANDLER",
-        message$: `To inject route handler, handler must be an object. You gave ${JSON.stringify(
-          handler
-        )}`
-      });
-    }
-
-    if (serverRoutes[url]) {
-      console.warn(
-        `You are overwrite route ${url}. Before handler is: ${serverRoutes[
-          url
-        ]}`
-      );
-      _.assign(serverRoutes[url], handler);
-    } else {
-      serverRoutes[url] = handler;
-    }
-
-    return reply(null, { data$: serverRoutes });
-  });
-
-  /** Save multi routes */
-  this.add("http:save_routes", function saveRoutes({ routes }, reply) {
-    /** routes must be an object */
-    if (!_.isObject(routes)) {
-      return reply(null, {
-        errorCode$: "HTTP_SAVE_ROUTES_INVALID_ROUTE",
-        message$: `To register routes, routes must be an object. You gave ${JSON.stringify(
-          routes
-        )}`
-      });
-    }
-
-    _.assign(serverRoutes, routes);
-    return reply(null, serverRoutes);
-  });
-
   /**
 	 * 1. Handle all routes
 	 * 2. Handle 404
 	 * 3. Handle error
 	 */
   this.add("http:run", function run(args, reply) {
-    /** Midleware before handl all route */
-    if (!_.isEmpty(mwBefore)) {
-      _.each(mwBefore, pattern =>
-        server.use((req, res, next) =>
-          actAsync(pattern, {}).then(_mwHandler).catch(error => next(error))
+    /**
+		 * We can get routes from 2 source
+		 * 1. Global config - routes
+		 * 2. Local config of each modules  - this.options().Https.routes
+		 * 
+		 * The glbal routes has more priority than local routes
+		 */
+    const serverRoutes = this.options().Https.routes;
+    /** Return err if routes is empty */
+    if (_.isEmpty(serverRoutes) || !_.isObject(serverRoutes)) {
+      return reply(
+        new Error(
+          "You must defined routes on each module/plugin or when you reigster http plugin."
         )
       );
     }
@@ -166,7 +102,7 @@ export default function Http({
         return console.log(`Pattern [${pattern}] has not been registered.`);
 
       server[method](url, (req, res, next) =>
-        actAsync(pattern, _getPayload(req))
+        asyncAct$(pattern, _getPayload(req, { queryConfig }))
           .then(
             ({
               errorCode$ = "ERROR_NONE",
@@ -197,15 +133,6 @@ export default function Http({
           .catch(error => next(error))
       );
     });
-
-    /** Midleware after handl all route */
-    if (!_.isEmpty(mwAfter)) {
-      _.each(mwAfter, pattern =>
-        server.use((req, res, next) =>
-          actAsync(pattern, {}).then(_mwHandler).catch(error => next(error))
-        )
-      );
-    }
 
     /** Default config */
     if (withDefaultConfig) {
@@ -243,7 +170,7 @@ const _mwHandler = ({
   return next();
 };
 
-const _getPayload = req => {
+const _getPayload = (req, { queryConfig = {} }) => {
   const { query = {}, body = {}, params = {}, method } = req;
   let { limit, page, sortBy, asc, token = "" } = query;
 
@@ -268,7 +195,7 @@ const _getPayload = req => {
       ]);
       _payload.sort = _prepareSort(sortBy, asc);
       _payload.params = params;
-      _.assign(_payload, _preparePagination(limit, page));
+      _.assign(_payload, _preparePagination(limit, page, { queryConfig }));
       break;
     case "PUT":
       _payload.params = params;
@@ -300,8 +227,8 @@ const _prepareSort = (sortBy = "id", asc) => {
   return { id: -1 };
 };
 
-const _preparePagination = (limit, page) => {
-  let pagination = _.assign({}, defaultPagination);
+const _preparePagination = (limit, page, { queryConfig = {} }) => {
+  let pagination = _.assign({}, queryConfig);
 
   limit = parseInt(limit, 10);
   page = parseInt(page, 10);

@@ -14,7 +14,9 @@ module.exports = {
     name: process.env.MONGO_DATABASE,
     host: process.env.MONGO_HOST,
     port: process.env.MONGO_PORT,
-    options: {},
+    options: {
+      promiseLibrary: require("bluebird")
+    },
     map: {
       "mongo/-/-": "*"
     }

@@ -2,8 +2,7 @@ import App from "..";
 
 /** All services is ready, now we handle http connection */
 App.ready(() =>
-  App.Services$
-    .actAsync("http:run")
+  App.asyncAct$("http:run")
     .then(({ data$: server }) =>
       server.listen(process.env.PORT || 9999, () =>
         console.log("Server is ready to handle connection")

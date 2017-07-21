@@ -1,6 +1,7 @@
 /** External modules */
 import Seneca from "seneca";
 import Config from "config";
+import _ from "lodash";
 
 /** Kryptstorm plugins */
 import Services from "./plugins/kryptstorm-services";
@@ -34,7 +35,9 @@ App.use(Services);
 /** Kryptstorm Entities */
 App.use(Enitties, { queryConfig: { limit$: Config.get("api.limitRow") } });
 /** Kryptstorm Http */
-App.use(Https, { isDebug: Config.get("api.isDebug") });
+App.use(Https, {
+  isDebug: Config.get("api.isDebug")
+});
 
 /** Register kryptstorm service */
 /** Kryptstorm User */

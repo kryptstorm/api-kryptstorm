@@ -12,9 +12,11 @@ import Bcrypt from "bcrypt";
 import Bluebird from "bluebird";
 import Randomstring from "randomstring";
 
-/** Internal modules */
-import App from "../../";
+/** Kryptstorm plugins */
+import Services from "../../plugins/kryptstorm-services";
+import Enitties from "../../plugins/kryptstorm-entities";
 
+/** Ensure you only run this file on development mode */
 if (process.env.NODE_ENV !== "development") {
   console.log(
     `Cannot run development prepare file at env: ${process.env.NODE_ENV}`
@@ -22,8 +24,7 @@ if (process.env.NODE_ENV !== "development") {
   process.exit(0);
 }
 
-const number = 254;
-const faker = (entity, number) => {
+export const faker = (entity, number, overwriteAttributes = {}) => {
   let result = [],
     usernames = [],
     emails = [];
@@ -57,21 +58,26 @@ const faker = (entity, number) => {
       });
     }
 
-    let _entity = entity.fixMake$();
-    _.assign(_entity, user);
+    let _entity = entity.make$();
+    _.assign(_entity, user, overwriteAttributes);
 
     result.push(_entity.asyncSave$());
     number--;
   }
 
-  return result;
+	return result;
 };
+
+const App = Seneca({
+  default_plugins: { transport: false },
+  debug: { undead: true }
+})
+  .use(Services)
+  .use(Enitties);
 
 /** All services is ready, now we handle http connection */
 App.ready(() =>
-  Bluebird.all(
-    faker(App.Enities$.fixMake$("mongo", "kryptstorm", "users"), number)
-  )
+  Bluebird.all(faker(App.make$("mongo", "kryptstorm", "users"), 254))
     .then(() => {
       console.log(`Insert ${number} users.`);
       process.exit(0);

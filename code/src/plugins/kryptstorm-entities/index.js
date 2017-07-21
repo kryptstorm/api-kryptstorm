@@ -7,11 +7,15 @@ import _ from "lodash";
 ValidateJS.Promise = Bluebird;
 
 /** Default query */
-let defaultQuery = { limit$: 20, skip$: 0, fields$: ["id"] };
+let defaultOptions = { queryConfig: { limit$: 20, skip$: 0, fields$: ["id"] } };
 
-export default function Entities({ queryConfig = {} }) {
-  /** Overwrite default config */
-  _.assign(defaultQuery, _.pick(queryConfig, _.keys(defaultQuery)));
+export default function Entities(options) {
+  /** Register plugin options */
+  this.options({
+    Entities: this.util.deepextend(defaultOptions, options)
+  });
+  /** Retrive options */
+	const { queryConfig } = this.options().Entities;
 
   const entityClass = this.private$.exports.Entity.prototype;
 
@@ -23,7 +27,10 @@ export default function Entities({ queryConfig = {} }) {
 	 * 3. If returnEntity is true, enity will be return instead of attributes object
 	 * 
 	 * query can have 
-	 * 1. fields$ (default is ["id"]) only return fields on this param 
+	 * 1. native$
+	 * 	- object => use object as query, no meta settings
+	 * 	- array => use first elem as query, second elem as meta settings
+	 * 2. fields$ (default is ["id"]) only return fields on this param 
 	 * @param {object} query defined query of entity
 	 * @param {bool} returnEntity if true, result is entity instead of attributes object
 	 * 
@@ -35,7 +42,7 @@ export default function Entities({ queryConfig = {} }) {
     /** Ensure params have valid type */
     if (!_.isObject(query)) query = {};
 
-    const resolveQuery = _.assign({}, defaultQuery, query);
+    const resolveQuery = _.assign({}, queryConfig, query);
     const _asyncSave$ = Bluebird.promisify(entityClass.save$, {
       context: this
     });
@@ -48,14 +55,17 @@ export default function Entities({ queryConfig = {} }) {
     );
   };
 
-	/**
+  /**
 	 * Get list of data by async method
-	 * query can have 
-	 * 1. fields$ (default is ["id"]) only return fields on this param
-	 * 2. limit$ number of rows should be return
-	 * 3. skip$
-	 * 4. sort$ {field_1: -1, field_2: 1}
-	 * Other attributes is what seneca-mongo put to mongo
+	 * query can have
+	 * 1. native$
+	 * 	- object => use object as query, no meta settings
+	 * 	- array => use first elem as query, second elem as meta settings
+	 * 2. fields$ (default is ["id"]) only return fields on this param
+	 * 3. limit$ number of rows should be return
+	 * 4. skip$
+	 * 5. sort$ {field_1: -1, field_2: 1}
+	 * Other attributes is awhat seneca-mongo put to mongo
 	 * 
 	 * @param {object} query defined query of entity
 	 * @param {bool} returnEntity if true, result is entity instead of attributes object
@@ -67,7 +77,7 @@ export default function Entities({ queryConfig = {} }) {
     /** Ensure params have valid type */
     if (!_.isObject(query)) query = {};
 
-    const resolveQuery = _.assign({}, defaultQuery, query);
+    const resolveQuery = _.assign({}, queryConfig, query);
     const _asyncList$ = Bluebird.promisify(entityClass.list$, {
       context: this
     });
@@ -82,10 +92,13 @@ export default function Entities({ queryConfig = {} }) {
     });
   };
 
-	/**
+  /**
 	 * Get data by async method
 	 * query can have 
-	 * 1. fields$ (default is ["id"]) only return fields on this param 
+	 * 1. native$
+	 * 	- object => use object as query, no meta settings
+	 * 	- array => use first elem as query, second elem as meta settings
+	 * 2. fields$ (default is ["id"]) only return fields on this param 
 	 * 
 	 * @param {object} query defined query of entity
 	 * @param {bool} returnEntity if true, result is entity instead of attributes object
@@ -97,7 +110,7 @@ export default function Entities({ queryConfig = {} }) {
     /** Ensure params have valid type */
     if (!_.isObject(query)) query = {};
 
-    const resolveQuery = _.assign({}, defaultQuery, query);
+    const resolveQuery = _.assign({}, queryConfig, query);
     const _asyncLoad$ = Bluebird.promisify(entityClass.load$, {
       context: this
     });
@@ -110,12 +123,15 @@ export default function Entities({ queryConfig = {} }) {
     );
   };
 
-	/**
+  /**
 	 * Remove data by async method
 	 * query can have
-	 * 1. all$ (default is false) Delete all fields match condition
-	 * 2. load$ (default is true) Return data after delete an entity
-	 * 3. fields (default is ["id"]) only return fields on this param. That is option provide by Kryptstorm
+	 * 1. native$
+	 * 	- object => use object as query, no meta settings
+	 * 	- array => use first elem as query, second elem as meta settings
+	 * 2. all$ (default is false) Delete all fields match condition
+	 * 3. load$ (default is true) Return data after delete an entity
+	 * 4. fields (default is ["id"]) only return fields on this param. That is option provide by Kryptstorm
 	 * 
 	 * @param {object} query defined query of entity
 	 * @param {bool} returnEntity if true, result is entity instead of attributes object
@@ -123,7 +139,7 @@ export default function Entities({ queryConfig = {} }) {
   entityClass.asyncRemove$ = function asyncRemove$(query = {}) {
     /** Ensure params have valid type */
     if (!_.isObject(query)) return Bluebird.resolve({});
-    const returnFields = _.assign({}, defaultQuery, query).fields$;
+    const returnFields = _.assign({}, queryConfig, query).fields$;
 
     const resolveQuery = _.assign(
       { all$: false, load$: true },
@@ -145,6 +161,14 @@ export default function Entities({ queryConfig = {} }) {
       /** Delete 1 row and keep slient */
       return Bluebird.resolve({});
     });
+  };
+
+  entityClass.asyncNative$ = function asyncNative$() {
+    const _asyncNative$ = Bluebird.promisify(entityClass.native$, {
+      context: this
+    });
+
+    return _asyncNative$();
   };
 
   this.add("init:Entities", function initEntities(args, reply) {
