@@ -14,9 +14,9 @@ import Validate, {
   STATUS_ACTIVE,
   STATUS_LOCKED,
   STATUS_DELETED,
-  VALIDATION_TYPE_NONE,
-  getToken,
-  getExpired
+  VALIDATION_TYPE_NEW,
+  getValidationToken,
+  getValidationExpired
 } from "./validate";
 
 /** Routes */
@@ -77,9 +77,9 @@ export default function Users() {
           /** User is new, generate validation field */
           if (cleanAttributes.status === STATUS_NEW) {
             cleanAttributes.validation = {
-              type: VALIDATION_TYPE_NONE,
-              code: getToken(),
-              expiredAt: getExpired()
+              type: VALIDATION_TYPE_NEW,
+              code: getValidationToken(),
+              expiredAt: getValidationExpired()
             };
             /** Add validation to save fields */
             _fields$.push("validation");

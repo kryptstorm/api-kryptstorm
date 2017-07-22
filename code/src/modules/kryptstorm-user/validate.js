@@ -27,14 +27,14 @@ export const STATUS_LOCKED = 2;
 export const STATUS_DELETED = 3;
 /** Validation */
 export const VALIDATION_TYPE_NEW = 1;
-export const VALIDATION_TYPE_RECOVERY = 1;
+export const VALIDATION_TYPE_RECOVERY = 2;
 
 /** Helper */
-export const getToken = () =>
+export const getValidationToken = () =>
   Crypto.createHash("md5")
     .update(String(new Date().getTime()) + Randomstring.generate(9))
     .digest("hex");
-export const getExpired = () => new Date(new Date().getTime() + 604800000);
+export const getValidationExpired = () => new Date(new Date().getTime() + 604800000);
 
 /** Validation schema*/
 const rulesOnCreate = {

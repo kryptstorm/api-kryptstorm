@@ -10,7 +10,10 @@ let defaultOptions = {
   withDefaultConfig: true,
   isDebug: false,
   queryConfig: { limit: 20, skip: 0 },
-  routes: {}
+  routes: {},
+  mws: {},
+  hooksBefore: {},
+  hooksAfter: {}
 };
 
 /**
@@ -58,9 +61,14 @@ export default function Https(options) {
 		 * 
 		 * The glbal routes has more priority than local routes
 		 */
-    const serverRoutes = this.options().Https.routes;
+    const {
+      routes,
+      mws,
+      hooksBefore,
+      hooksAfter
+    } = this.options().Https;
     /** Return err if routes is empty */
-    if (_.isEmpty(serverRoutes) || !_.isObject(serverRoutes)) {
+    if (_.isEmpty(routes) || !_.isObject(routes)) {
       return reply(
         new Error(
           "You must defined routes on each module/plugin or when you reigster http plugin."
@@ -69,7 +77,7 @@ export default function Https(options) {
     }
 
     /** Handle each route */
-    _.each(serverRoutes, (pattern, route) => {
+    _.each(routes, (pattern, route) => {
       /** route must be a string */
       if (!_.isString(route))
         return console.log(
