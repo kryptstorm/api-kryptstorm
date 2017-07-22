@@ -190,7 +190,7 @@ const _formatRow = (entity, fields$) => {
     row = entity.data$();
   } else {
     /** Result of remove function is a mongo object, convert it to entity-like */
-    row = _.assign(entity, { id: entity._id });
+    row = _.assign(entity, { id: entity._id.toString() });
   }
 
   const _row = _.isArray(fields$) ? _.pick(row, fields$) : row;

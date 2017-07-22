@@ -13,7 +13,7 @@ import _ from "lodash";
 /** Internal modules */
 import TestApp, { faker } from "./dev";
 import KryptstormUser from ".";
-import { PUBLICK_FIELDS } from "./validate";
+import { PUBLICK_FIELDS, STATUS_NEW } from "./validate";
 
 /** Init test app */
 const app = TestApp();
@@ -50,6 +50,34 @@ describe("Kryptstorm Users", function() {
     })
   );
 
+  it("Create user", function(done) {
+    const attributes = faker(null, 1)[0];
+
+    app
+      .asyncAct$("users:create", { attributes })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        /** Dont return field - what is not on PUBLICK_FIELDS */
+        expect(_.size(_.omit(data$, PUBLICK_FIELDS))).to.be.equal(0);
+        expect(data$.id).to.be.exist;
+
+        return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
+      })
+      .then(({ data$ }) => {
+        /** Creation is successful */
+        expect(attributes.username).is.equal(data$.username);
+        expect(attributes.email).is.equal(data$.email);
+        /** Create user always set status is STATUS_NEW */
+        expect(STATUS_NEW).is.equal(data$.status);
+        done(null);
+      })
+      .catch(done);
+  });
+
   it("Find all users", function(done) {
     app
       .asyncAct$("users:find_all")
@@ -58,7 +86,6 @@ describe("Kryptstorm Users", function() {
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */
         expect(data$).to.be.an("array");
-        expect(data$.length).to.be.equal(insertNumber);
         expect(data$[0]).to.be.exist;
         expect(data$[0]).to.be.an("object");
         /** Dont return field - what is not on PUBLICK_FIELDS */
@@ -96,8 +123,8 @@ describe("Kryptstorm Users", function() {
 
     app
       .asyncAct$("users:find_by_id", { params: { id: userId } })
-      .then(({ data$: beforeUpdateData$ }) => {
-        beforeUpdateData = beforeUpdateData$;
+      .then(({ data$ }) => {
+        beforeUpdateData = data$;
 
         return app.asyncAct$("users:update_by_id", {
           params: { id: userId },
@@ -115,18 +142,43 @@ describe("Kryptstorm Users", function() {
         /** Dont return field - what is not on PUBLICK_FIELDS */
         expect(_.size(_.omit(data$, PUBLICK_FIELDS))).to.be.equal(0);
         expect(data$.id).to.be.exist;
+        expect(data$.id).to.equal(userId);
 
-        return app.asyncAct$("users:find_by_id", { params: { id: userId } });
+        return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
       })
-      .then(({ data$: afterUpdateData$ }) => {
+      .then(({ data$ }) => {
         expect(_.size(beforeUpdateData)).is.equal(_.size(data));
-        expect(_.size(data)).is.equal(_.size(afterUpdateData$));
+        expect(_.size(data)).is.equal(_.size(data$));
 
         expect(beforeUpdateData.usename).is.equal(data.usename);
-        expect(data.usename).is.equal(afterUpdateData$.usename);
+        expect(data.usename).is.equal(data$.usename);
 
         /** Update field is successful */
-        expect(attributes.status).is.equal(attributes.status);
+        done(null);
+      })
+      .catch(done);
+  });
+
+  it("Delete user by id", function(done) {
+    app
+      .asyncAct$("users:delete_by_id", { params: { id: userId } })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        /** Dont return field - what is not on PUBLICK_FIELDS */
+        expect(_.size(_.omit(data$, PUBLICK_FIELDS))).to.be.equal(0);
+				expect(data$.id).to.be.exist;
+        expect(data$.id).to.equal(userId);
+
+        return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
+      })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Creation is successful */
+        expect(errorCode$).is.equal("DATA_NOT_FOUND");
+        expect(data$).to.be.not.exist;
         done(null);
       })
       .catch(done);
