@@ -10,8 +10,14 @@ export default function Auth() {
   /** Register notAuthenticatednRoutes and notAuthorizedRoutes to http modules if it's exist */
   if (this.has("init:Http")) {
     _.assign(this.options().Https, {
-      notAuthenticatednRoutes,
-      notAuthorizedRoutes
+      notAuthenticatednRoutes: [
+        ...this.options().HttpsnotAuthenticatednRoutes,
+        ...notAuthenticatednRoutes
+      ],
+      notAuthorizedRoutes: [
+        ...this.options().notAuthorizedRoutes,
+        ...notAuthorizedRoutes
+      ]
     });
   }
 
