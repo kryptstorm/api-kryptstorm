@@ -108,7 +108,7 @@ export default function Users() {
   });
 
   this.add("users:find_all", function usersFindAll(args, reply) {
-		let { query = {}, sort = {}, limit, skip } = args;
+    let { query = {}, sort = {}, limit, skip } = args;
 
     /** Build query */
     let _query = { fields$: PUBLICK_FIELDS };
@@ -290,5 +290,6 @@ export default function Users() {
       .then(row => reply(null, { data$: row }))
       .catch(err => reply(null, { errors$: err }));
   });
+
   return { name: "Users" };
 }

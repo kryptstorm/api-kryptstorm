@@ -11,6 +11,8 @@ let defaultOptions = {
   isDebug: false,
   queryConfig: { limit: 20, skip: 0 },
   routes: {},
+  notAuthenticatednRoutes: ["/"],
+  notAuthorizedRoutes: [],
   mws: {},
   hooksBefore: {},
   hooksAfter: {}
@@ -63,10 +65,13 @@ export default function Https(options) {
 		 */
     const {
       routes,
+      notAuthenticatednRoutes,
+      notAuthorizedRoutes,
       mws,
       hooksBefore,
       hooksAfter
     } = this.options().Https;
+
     /** Return err if routes is empty */
     if (_.isEmpty(routes) || !_.isObject(routes)) {
       return reply(
