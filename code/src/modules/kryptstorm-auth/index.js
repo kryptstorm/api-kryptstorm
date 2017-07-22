@@ -1,3 +1,4 @@
+import _ from "lodash";
 /** Routes */
 export const routes = {
   "post::/auth": "auth:authenticated"
@@ -7,17 +8,20 @@ export const notAuthenticatednRoutes = ["post::/auth"];
 export const notAuthorizedRoutes = [];
 
 export default function Auth() {
+  const _notAuthenticatednRoutes = _.uniq([
+    ...this.options().Https.notAuthenticatednRoutes,
+    ...notAuthenticatednRoutes
+  ]);
+  const _notAuthorizedRoutes = _.uniq([
+    ...this.options().Https.notAuthorizedRoutes,
+    ...notAuthorizedRoutes
+  ]);
+
   /** Register notAuthenticatednRoutes and notAuthorizedRoutes to http modules if it's exist */
   if (this.has("init:Http")) {
     _.assign(this.options().Https, {
-      notAuthenticatednRoutes: [
-        ...this.options().HttpsnotAuthenticatednRoutes,
-        ...notAuthenticatednRoutes
-      ],
-      notAuthorizedRoutes: [
-        ...this.options().notAuthorizedRoutes,
-        ...notAuthorizedRoutes
-      ]
+      notAuthenticatednRoutes: _notAuthenticatednRoutes,
+      notAuthorizedRoutes: _notAuthorizedRoutes
     });
   }
 
