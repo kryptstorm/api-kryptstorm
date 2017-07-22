@@ -51,8 +51,7 @@ describe("Kryptstorm Users", function() {
   );
 
   it("Create user", function(done) {
-		const attributes = faker(null, 1)[0];
-		//test
+    const attributes = faker(null, 1)[0];
 
     app
       .asyncAct$("users:create", { attributes })
@@ -171,7 +170,7 @@ describe("Kryptstorm Users", function() {
         expect(data$).to.be.an("object");
         /** Dont return field - what is not on PUBLICK_FIELDS */
         expect(_.size(_.omit(data$, PUBLICK_FIELDS))).to.be.equal(0);
-				expect(data$.id).to.be.exist;
+        expect(data$.id).to.be.exist;
         expect(data$.id).to.equal(userId);
 
         return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
