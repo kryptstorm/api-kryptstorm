@@ -51,7 +51,8 @@ describe("Kryptstorm Users", function() {
   );
 
   it("Create user", function(done) {
-    const attributes = faker(null, 1)[0];
+		const attributes = faker(null, 1)[0];
+		//test
 
     app
       .asyncAct$("users:create", { attributes })
