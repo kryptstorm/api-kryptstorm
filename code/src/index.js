@@ -10,6 +10,7 @@ import Https from "./plugins/kryptstorm-https";
 
 /** Kryptstorm modules */
 import KryptstormUser from "./services/kryptstorm-user";
+import KryptstormAuth from "./services/kryptstorm-auth";
 
 /** Init Seneca */
 const options = {
@@ -42,6 +43,8 @@ App.use(Https, {
 /** Register kryptstorm service */
 /** Kryptstorm User */
 App.use(KryptstormUser);
+/** Kryptstorm auth */
+App.use(KryptstormAuth);
 
 /** Export Kryptstorm app */
 export default App;

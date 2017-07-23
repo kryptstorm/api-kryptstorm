@@ -10,33 +10,39 @@ import ValidationRules, { STATUS_ACTIVE } from "../kryptstorm-user/validate";
 
 /** Routes */
 export const routes = {
-  "post::/auth": "auth:authenticated"
+  "post::/auth": "auth:authenticated",
+  "post::/auth/verify": "auth:verify"
 };
 
-export const notAuthenticatednRoutes = ["post::/auth"];
-export const notAuthorizedRoutes = [];
+/**
+ * Defined public routes
+ * 1. A route is not exist on both notAuthenticatednRoutes and notAuthorizedRoutes will be considered as public route
+ * 2. If route is only exist on notAuthorizedRoutes, that mean after logged, user can do anything with current route
+ * It's useful for account route as put::/user/:id
+ * 3. If route is only exist on notAuthenticatednRoutes, that mean user must be logged and authorized for current routes
+ */
+export const notAuthenticatednRoutes = ["post::/auth", "post::/auth/verify"];
+export const notAuthorizedRoutes = ["post::/auth", "post::/auth/verify"];
 
+/** Defined async jwt methods */
 const asyncSign$ = Bluebird.promisify(JWT.sign);
 const asyncVerify$ = Bluebird.promisify(JWT.verify);
 
 export default function Auth() {
-  /** Register notAuthenticatednRoutes and notAuthorizedRoutes to http modules if it's exist */
+  /** Register http options */
   if (this.has("init:Http")) {
-    /** Make notAuthenticatednRoutes and notAuthorizedRoutes is unique */
-    const _notAuthenticatednRoutes = _.uniq([
-      ...this.options().Https.notAuthenticatednRoutes,
+    /** Register routes */
+    _.assign(this.options().Https.routes, routes);
+    /** Register notAuthenticatednRoutes */
+    this.options().Https.auth.notAuthenticatednRoutes = [
+      ...this.options().Https.auth.notAuthenticatednRoutes,
       ...notAuthenticatednRoutes
-    ]);
-    const _notAuthorizedRoutes = _.uniq([
-      ...this.options().Https.notAuthorizedRoutes,
+    ];
+    /** Register notAuthorizedRoutes */
+    this.options().Https.auth.notAuthorizedRoutes = [
+      ...this.options().Https.auth.notAuthorizedRoutes,
       ...notAuthorizedRoutes
-    ]);
-
-    /** Register notAuthenticatednRoutes and notAuthorizedRoutes */
-    _.assign(this.options().Https, {
-      notAuthenticatednRoutes: _notAuthenticatednRoutes,
-      notAuthorizedRoutes: _notAuthorizedRoutes
-    });
+    ];
   }
 
   this.add("init:Auth", function initAuth(args, reply) {

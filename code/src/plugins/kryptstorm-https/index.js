@@ -5,14 +5,18 @@ import Cors from "cors";
 import MethodOverride from "method-override";
 import _ from "lodash";
 import Config from "config";
+import Bluebird from "bluebird";
 
 let defaultOptions = {
   withDefaultConfig: true,
   isDebug: false,
   queryConfig: { limit: 20, skip: 0 },
   routes: {},
-  notAuthenticatednRoutes: ["/"],
-  notAuthorizedRoutes: [],
+  auth: {
+    notAuthenticatednRoutes: ["/"],
+    notAuthorizedRoutes: ["/"],
+    rules: {}
+  },
   mws: {},
   hooksBefore: {},
   hooksAfter: {}
@@ -63,14 +67,7 @@ export default function Https(options) {
 		 * 
 		 * The glbal routes has more priority than local routes
 		 */
-    const {
-      routes,
-      notAuthenticatednRoutes,
-      notAuthorizedRoutes,
-      mws,
-      hooksBefore,
-      hooksAfter
-    } = this.options().Https;
+    const { routes, auth, mws, hooksBefore, hooksAfter } = this.options().Https;
 
     /** Return err if routes is empty */
     if (_.isEmpty(routes) || !_.isObject(routes)) {
@@ -79,6 +76,32 @@ export default function Https(options) {
           "You must defined routes on each module/plugin or when you reigster http plugin."
         )
       );
+    }
+
+    /** Execute midelware if it is not empty array */
+    if (_.isArray(mws) && !_.isEmpty(mws)) {
+      server.use((req, res, next) => {
+        /** Defined where we will store midleware data */
+        req.mws$ = {};
+        /** Execute midleware pattern */
+        let _mws = [];
+        _.each(mws, mw => _mws.push(asyncAct$(mw)));
+
+        /**
+				 * The midelware will execute with rule
+				 * First come, first served
+				 * Current data will overwrite previous data
+				 */
+        return Bluebird.all(_mws)
+          .then(mwData =>
+            _.reduce(
+              mwData,
+              (mws$, { data$ = {} }) => _.assign(mws$, data$),
+              req.mws$
+            )
+          )
+          .catch(err => next(err));
+      });
     }
 
     /** Handle each route */
@@ -213,7 +236,7 @@ const _preapreQuery = (query = {}, excludeFields) => {
 };
 
 const _prepareSort = sort => {
-  if (!_.isString(sort)) sort = "id";
+  if (!_.isString(sort) || !sort) sort = "id";
   return _.reduce(
     sort.split(","),
     (_sort, field) => {

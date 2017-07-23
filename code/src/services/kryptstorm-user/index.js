@@ -29,9 +29,10 @@ export const routes = {
 };
 
 export default function Users() {
-  /** Register routes to http modules if it's exist */
+  /** Register http options */
   if (this.has("init:Http")) {
-    _.assign(this.options().Https.routes, routes);
+    /** Register routes */
+    _.assign(this.options().Https, { routes });
   }
 
   this.add("init:Users", function initUsers(args, reply) {
