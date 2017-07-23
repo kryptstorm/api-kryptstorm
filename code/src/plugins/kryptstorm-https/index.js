@@ -12,11 +12,7 @@ let defaultOptions = {
   isDebug: false,
   queryConfig: { limit: 20, skip: 0 },
   routes: {},
-  auth: {
-    notAuthenticatednRoutes: ["/"],
-    notAuthorizedRoutes: ["/"],
-    rules: {}
-  },
+  auth: {},
   mws: {},
   hooksBefore: {},
   hooksAfter: {}

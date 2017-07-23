@@ -23,9 +23,13 @@ export const PUBLICK_FIELDS = [
 ];
 
 /** Status */
+/** New account, need to be validate */
 export const STATUS_NEW = 0;
+/** Active user, can do anything the was authorized */
 export const STATUS_ACTIVE = 1;
+/** Locked user, they cannot do anything but their sourse still show to end user */
 export const STATUS_LOCKED = 2;
+/** Faked delete user, their account and sourse is hidden with end user */
 export const STATUS_DELETED = 3;
 /** Validation */
 export const VALIDATION_TYPE_NEW = 1;
