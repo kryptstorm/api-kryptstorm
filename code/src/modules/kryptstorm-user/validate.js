@@ -55,7 +55,6 @@ const ruleOnNormal = {
       message: "can only contain letter, dot or hyphen."
     }
   },
-  password: { presence: true, length: { minimum: 6, maximum: 256 } },
   status: {
     presence: true,
     inclusion: [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED]
@@ -77,7 +76,8 @@ const rulesOnCreate = _.assign({}, ruleOnNormal, {
     presence: true,
     email: true,
     unique: ["mongo", "kryptstorm", "users"]
-  }
+  },
+  password: { presence: true, length: { minimum: 6, maximum: 256 } }
 });
 
 const rulesOnRegister = _.assign({}, rulesOnCreate, {
