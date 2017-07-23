@@ -114,18 +114,17 @@ export default function Users() {
 
   this.add("users:find_all", function usersFindAll(args, reply) {
     let { query = {}, sort = {}, limit, skip } = args;
-
     /** Build query */
     let _query = { fields$: PUBLICK_FIELDS };
     /** Only allow query public field */
     _.assign(_query, _.pick(query, PUBLICK_FIELDS));
     /** Sort */
-    _query.sort$ = sort;
+    _query.sort$ = _.pick(sort, PUBLICK_FIELDS);
     /** Pagination */
     _.assign(_query, { limit$: limit, skip$: skip });
 
     /** Some field need to convert a type before query */
-    _query.status = Number(_query.status);
+    if (!_.isUndefined(_query.status)) _query.status = Number(_query.status);
 
     /** Load data */
     return this.make$("mongo", "kryptstorm", "users")

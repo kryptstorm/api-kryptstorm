@@ -162,30 +162,9 @@ export default function Https(options) {
   return { name: "Http" };
 }
 
-const _mwHandler = ({
-  errorCode$ = "ERROR_NONE",
-  message$ = "",
-  data$ = {},
-  meta$ = {},
-  errors$
-}) => {
-  /** 
-	 * If error$ is defined
-	 * 1. Or system error 
-	 * 2. Or validation error
-	 */
-  if (!_.isUndefined(errors$)) return next(errors$);
-
-  /** If errorCode$ is not equal to ERROR_NONE, response error and error message */
-  if (errorCode$ !== "ERROR_NONE") {
-    return res.json({ errorCode: errorCode$, message: message$ });
-  }
-  return next();
-};
-
 const _getPayload = (req, { queryConfig = {} }) => {
   const { query = {}, body = {}, params = {}, method } = req;
-  let { limit, page, sortBy, asc, token = "" } = query;
+  let { limit, page, sort, token = "" } = query;
 
   let _payload = {};
 
@@ -206,7 +185,7 @@ const _getPayload = (req, { queryConfig = {} }) => {
         "asc",
         "token"
       ]);
-      _payload.sort = _prepareSort(sortBy, asc);
+      _payload.sort = _prepareSort(sort);
       _payload.params = params;
       _.assign(_payload, _preparePagination(limit, page, { queryConfig }));
       break;
@@ -233,11 +212,16 @@ const _preapreQuery = (query = {}, excludeFields) => {
   return _.omit(query, excludeFields);
 };
 
-const _prepareSort = (sortBy = "id", asc) => {
-  if (!_.isEmpty(sortBy) && _.isString(sortBy)) {
-    return { [sortBy]: asc == 1 ? 1 : -1 };
-  }
-  return { id: -1 };
+const _prepareSort = sort => {
+  if (!_.isString(sort)) sort = "id";
+  return _.reduce(
+    sort.split(","),
+    (_sort, field) => {
+      if (field[0] !== "-") return _.assign(_sort, { [field]: 1 });
+      return _.assign(_sort, { [field.substr(1)]: -1 });
+    },
+    {}
+  );
 };
 
 const _preparePagination = (limit, page, { queryConfig = {} }) => {
