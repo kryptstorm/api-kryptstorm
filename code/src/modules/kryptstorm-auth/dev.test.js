@@ -81,6 +81,38 @@ describe("Kryptstorm Auth", function() {
         expect(data$).to.be.an("object");
         expect(data$.token).to.be.exist;
         expect(data$.renewToken).to.be.exist;
+
+        _.assign(user, data$);
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Verification - by token", function(done) {
+    app
+      .asyncAct$("auth:verify", { attributes: { token: user.token } })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.id).to.be.exist;
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Verification - by renew token", function(done) {
+    app
+      .asyncAct$("auth:verify", { attributes: { token: user.renewToken } })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.id).to.be.exist;
         return done();
       })
       .catch(done);

@@ -99,10 +99,16 @@ const ruleOnAuthenticated = {
   password: { presence: true, length: { minimum: 6, maximum: 256 } }
 };
 
+const ruleOnVerify = {
+  token: { presence: true },
+  renewToken: { presence: false }
+};
+
 export default {
   onCreate: attributes => ValidateJS.async(attributes, rulesOnCreate),
   onRegister: attributes => ValidateJS.async(attributes, rulesOnRegister),
   onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate),
   onAuthenticated: attributes =>
-    ValidateJS.async(attributes, ruleOnAuthenticated)
+    ValidateJS.async(attributes, ruleOnAuthenticated),
+  onVerify: attributes => ValidateJS.async(attributes, ruleOnVerify)
 };

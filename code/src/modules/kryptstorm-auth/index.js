@@ -44,14 +44,14 @@ export default function Auth() {
 
   this.add("auth:authenticated", function authAuthorization(args, reply) {
     const { attributes = {} } = args;
-    const authenticatedFailedResponse = {
-      errorCode$: "AUTHENTICATED_FAILED",
+    const authenticationFailedResponse = {
+      errorCode$: "AUTHENTICATION_FAILED",
       message$: "Authentication has been failed."
     };
 
     /** Validation */
     return ValidationRules.onAuthenticated(attributes)
-      .then(({ username = "", password = "" }) => {
+      .then(({ username, password }) => {
         /** Username must be on lowercase */
         username = _.toLower(username);
         /** Build query */
@@ -77,11 +77,11 @@ export default function Auth() {
 						 * 3. User is on validate (new user or need to recovery password)
 						 */
             if (_.isEmpty(row)) {
-              return reply(null, authenticatedFailedResponse);
+              return reply(null, authenticationFailedResponse);
             }
 
             return Bcrypt.compare(password, row.password).then(isMatch => {
-              if (!isMatch) return done(null, authenticatedFailedResponse);
+              if (!isMatch) return done(null, authenticationFailedResponse);
 
               const getAuthenticatedToken = (options = {}) =>
                 asyncSign$(
@@ -95,25 +95,38 @@ export default function Auth() {
 							 * If [token] is expired, [renewToken] will help user still login and reset [token]
 							 * It's help mobile app can still logged forever
 							 */
-              return Bluebird.all(
+              return Bluebird.all([
                 /** Token */
                 getAuthenticatedToken(),
                 /** RenewToken */
                 getAuthenticatedToken({ expiresIn: 1209600 })
-              ).then(tokens =>
-                reply(null, {
+              ]).then(tokens => {
+                return reply(null, {
                   data$: {
                     token: tokens[0],
                     renewToken: tokens[1]
                   }
-                })
-              );
+                });
+              });
             });
           });
       })
       .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
-  this.add("auth:verify", function authVerify(args, reply) {});
+  this.add("auth:verify", function authVerify(args, reply) {
+    const { attributes = {} } = args;
+    const verificationFailedResponse = {
+      errorCode$: "VERIFICATION_FAILED",
+      message$: "Authentication has been failed."
+    };
+
+    return ValidationRules.onVerify(attributes)
+      .then(({ token, renewToken }) =>
+        asyncVerify$(token, Config.get("jwt.secreteKey"))
+      )
+      .then(jwtPayload => reply(null, { data$: jwtPayload }))
+      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+  });
 
   return { name: "Auth" };
 }
