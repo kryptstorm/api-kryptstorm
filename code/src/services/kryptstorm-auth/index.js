@@ -32,6 +32,7 @@ export default function Auth() {
       ...notAuthorizedRoutes
     ]);
 
+    /** Register notAuthenticatednRoutes and notAuthorizedRoutes */
     _.assign(this.options().Https, {
       notAuthenticatednRoutes: _notAuthenticatednRoutes,
       notAuthorizedRoutes: _notAuthorizedRoutes
@@ -113,6 +114,7 @@ export default function Auth() {
       })
       .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
+
   this.add("auth:verify", function authVerify(args, reply) {
     const { attributes = {} } = args;
     const verificationFailedResponse = {

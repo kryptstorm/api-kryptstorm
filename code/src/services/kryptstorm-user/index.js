@@ -122,7 +122,10 @@ export default function Users() {
     /** Sort */
     _query.sort$ = sort;
     /** Pagination */
-    _.assign(_query, { limit$: limit, skip$: limit });
+    _.assign(_query, { limit$: limit, skip$: skip });
+
+    /** Some field need to convert a type before query */
+    _query.status = Number(_query.status);
 
     /** Load data */
     return this.make$("mongo", "kryptstorm", "users")

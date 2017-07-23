@@ -267,14 +267,15 @@ const _httpError = (isDebug, err, req, res, next) => {
   if (err && !_.isError(err) && _.isObject(err)) {
     return res.json({
       errorCode: "VALIDATION_FAILED",
-      message: "Validation failed. Please try again.",
+      message: "Validation has been failed. Please try again.",
       errors: err
     });
   }
 
   /** System error */
-  const message = isDebug
-    ? err.message
-    : "Server encountered an error while trying to handle request";
+  const message =
+    isDebug && err.message
+      ? err.message
+      : "Server encountered an error while trying to handle request";
   return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
 };
