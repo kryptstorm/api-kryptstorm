@@ -11,7 +11,8 @@ import { expect } from "chai";
 import _ from "lodash";
 
 /** Internal modules */
-import TestApp, { faker } from "./dev";
+import TestApp from "../../dev";
+import { faker } from "./dev";
 import KryptstormUser from ".";
 import { PUBLICK_FIELDS, STATUS_NEW } from "./validate";
 
@@ -55,7 +56,7 @@ describe("Kryptstorm Users", function() {
 
     app
       .asyncAct$("users:create", { attributes })
-      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */
@@ -73,8 +74,6 @@ describe("Kryptstorm Users", function() {
         expect(attributes.email).is.equal(data$.email);
         expect(attributes.firstName).is.equal(data$.firstName);
         expect(attributes.lastName).is.equal(data$.lastName);
-        /** Create user always set status is STATUS_NEW */
-        expect(STATUS_NEW).is.equal(data$.status);
         done(null);
       })
       .catch(done);

@@ -65,9 +65,9 @@ const rulesOnCreate = _.assign({}, ruleOnNormal, {
   username: {
     presence: true,
     format: {
-      pattern: "[a-zA-Z0-9.-]+",
+      pattern: "[a-zA-Z0-9.-_]+",
       flags: "i",
-      message: "can only contain letter, number, dot and hyphen."
+      message: "can only contain letter, number, dot, hyphen and underscore."
     },
     unique: ["mongo", "kryptstorm", "users"],
     length: { minimum: 3, maximum: 256 }
@@ -91,8 +91,18 @@ const rulesOnUpdate = _.assign({}, ruleOnNormal, {
   }
 });
 
+const ruleOnAuthenticated = {
+  username: {
+    presence: true,
+    length: { minimum: 3, maximum: 256 }
+  },
+  password: { presence: true, length: { minimum: 6, maximum: 256 } }
+};
+
 export default {
   onCreate: attributes => ValidateJS.async(attributes, rulesOnCreate),
   onRegister: attributes => ValidateJS.async(attributes, rulesOnRegister),
-  onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate)
+  onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate),
+  onAuthenticated: attributes =>
+    ValidateJS.async(attributes, ruleOnAuthenticated)
 };

@@ -20,5 +20,11 @@ module.exports = {
     map: {
       "mongo/-/-": "*"
     }
+  },
+  jwt: {
+    secreteKey: "R2KuAPpwmLXpnNbglpHjhi2K61ukzQ1s",
+    defaultOptions: {
+      expiresIn: 604800 // 7 days
+    }
   }
 };

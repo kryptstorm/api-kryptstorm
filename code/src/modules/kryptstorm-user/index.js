@@ -8,7 +8,7 @@ import _ from "lodash";
 import Validator from "validator";
 
 /** Internal modules */
-import Validate, {
+import ValidationRules, {
   PUBLICK_FIELDS,
   STATUS_NEW,
   STATUS_ACTIVE,
@@ -50,7 +50,7 @@ export default function Users() {
     }
 
     /** First, validate - that will remove all undefined on validation schema */
-    return (Validate.onCreate(attributes)
+    return (ValidationRules.onCreate(attributes)
         /** Two, save data */
         .then(cleanAttributes => {
           /** Defined save fields */
@@ -101,10 +101,11 @@ export default function Users() {
           /** Save user */
           return _user
             .asyncSave$(_query)
-            .then(row => reply(null, { data$: row }))
-            .catch(err => reply(null, { errors$: err }));
+            .then(row => reply(null, { data$: row }));
         })
-        .catch(err => reply(null, { errors$: err })) );
+        .catch(err =>
+          reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err })
+        ) );
   });
 
   this.add("users:find_all", function usersFindAll(args, reply) {
@@ -123,7 +124,7 @@ export default function Users() {
     return this.make$("mongo", "kryptstorm", "users")
       .asyncList$(_query)
       .then(rows => reply(null, { data$: rows }))
-      .catch(err => reply(null, { errors$: err }));
+      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   this.add("users:find_by_id", function usersFindById(args, reply) {
@@ -162,10 +163,7 @@ export default function Users() {
         }
         return reply(null, { data$: row });
       })
-      .catch(err => {
-        console.log(err);
-        return reply(null, { errors$: err });
-      });
+      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   this.add("users:update_by_id", function usersFindById(args, reply) {
@@ -217,7 +215,7 @@ export default function Users() {
 
         return (
           /** First, validate */
-          Validate.onUpdate(attributes)
+          ValidationRules.onUpdate(attributes)
             /** Two, save data */
             .then(cleanAttributes => {
               /** Defined save fields */
@@ -252,12 +250,11 @@ export default function Users() {
               /** Save user */
               return user
                 .asyncSave$(_query)
-                .then(row => reply(null, { data$: row }))
-                .catch(err => reply(null, { errors$: err }));
+                .then(row => reply(null, { data$: row }));
             })
         );
       })
-      .catch(err => reply(null, { errors$: err }));
+      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   this.add("users:delete_by_id", function usersFindById(args, reply) {
@@ -288,7 +285,7 @@ export default function Users() {
     return this.make$("mongo", "kryptstorm", "users")
       .asyncRemove$(_query)
       .then(row => reply(null, { data$: row }))
-      .catch(err => reply(null, { errors$: err }));
+      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   return { name: "Users" };

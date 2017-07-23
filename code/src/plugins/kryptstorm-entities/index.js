@@ -15,7 +15,7 @@ export default function Entities(options) {
     Entities: this.util.deepextend(defaultOptions, options)
   });
   /** Retrive options */
-	const { queryConfig } = this.options().Entities;
+  const { queryConfig } = this.options().Entities;
 
   const entityClass = this.private$.exports.Entity.prototype;
 
@@ -58,7 +58,7 @@ export default function Entities(options) {
   /**
 	 * Get list of data by async method
 	 * query can have
-	 * 1. native$
+	 * 1. native$ is
 	 * 	- object => use object as query, no meta settings
 	 * 	- array => use first elem as query, second elem as meta settings
 	 * 2. fields$ (default is ["id"]) only return fields on this param

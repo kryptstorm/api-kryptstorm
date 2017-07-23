@@ -1,8 +1,6 @@
 /** Ensure you only run this file on development mode */
 if (process.env.NODE_ENV !== "development") {
-  console.log(
-    `Cannot run development prepare file at env: ${process.env.NODE_ENV}`
-  );
+  console.log(`Cannot run this file at env: ${process.env.NODE_ENV}`);
   process.exit(0);
 }
 
@@ -10,7 +8,8 @@ if (process.env.NODE_ENV !== "development") {
 import Bluebird from "bluebird";
 
 /** Internal modules */
-import TestApp, { faker } from "./dev";
+import TestApp from "../../dev";
+import { faker } from "./dev";
 
 const insertNumber = 254;
 /** Create test app */

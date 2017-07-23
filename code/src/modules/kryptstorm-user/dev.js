@@ -1,30 +1,13 @@
 /** Ensure you only run this file on development mode */
 if (process.env.NODE_ENV !== "development") {
-  console.log(
-    `Cannot run development prepare file at env: ${process.env.NODE_ENV}`
-  );
+  console.log(`Cannot run this file at env: ${process.env.NODE_ENV}`);
   process.exit(0);
 }
-
-/**
- * Run this file will do all thing to make your development is ready
- * Don't run this file if you aren't in development mode
- */
-/** System modules */
-import Crypto from "crypto";
 
 /** External modules */
 import Faker from "faker";
 import _ from "lodash";
 import Bcrypt from "bcrypt";
-import Bluebird from "bluebird";
-import Randomstring from "randomstring";
-import Seneca from "seneca";
-import Config from "config";
-
-/** Kryptstorm plugins */
-import Services from "../../plugins/kryptstorm-services";
-import Enitties from "../../plugins/kryptstorm-entities";
 
 /** Internal modules */
 import {
@@ -39,19 +22,6 @@ import {
 } from "./validate";
 
 const statuses = [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED];
-const TestApp = fn =>
-  Seneca({
-    log: "test"
-  })
-    .test(fn)
-    .use("mongo-store", Config.get("mongo"))
-    .use("entity")
-    .use(Services)
-    .use(Enitties);
-
-/** Export test to other file can use it to init test app */
-export default TestApp;
-
 export const faker = (entity, number = 0, overwriteAttributes = {}) => {
   let result = [],
     usernames = [],
