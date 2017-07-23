@@ -19,7 +19,7 @@ import {
   VALIDATION_TYPE_RECOVERY,
   getValidationToken,
   getValidationExpired
-} from "./validate";
+} from "./validation";
 
 const statuses = [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED];
 export const faker = (entity, number = 0, overwriteAttributes = {}, query) => {

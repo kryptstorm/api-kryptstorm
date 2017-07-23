@@ -6,7 +6,7 @@ import JWT from "jsonwebtoken";
 import Bluebird from "bluebird";
 
 /** Internal modules */
-import ValidationRules, { STATUS_ACTIVE } from "../kryptstorm-user/validate";
+import ValidationRules, { STATUS_ACTIVE } from "../kryptstorm-user/validation";
 
 /** Routes */
 export const routes = {

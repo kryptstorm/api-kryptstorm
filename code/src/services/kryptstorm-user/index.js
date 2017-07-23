@@ -17,7 +17,7 @@ import ValidationRules, {
   VALIDATION_TYPE_NEW,
   getValidationToken,
   getValidationExpired
-} from "./validate";
+} from "./validation";
 
 /** Routes */
 export const routes = {

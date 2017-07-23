@@ -7,7 +7,7 @@ import _ from "lodash";
 import TestApp from "../../dev";
 import KryptstormUser from "../../services/kryptstorm-user";
 import { faker } from "../../services/kryptstorm-user/dev";
-import { STATUS_ACTIVE } from "../../services/kryptstorm-user/validate";
+import { STATUS_ACTIVE } from "../../services/kryptstorm-user/validation";
 import KryptstormAuth from ".";
 
 /** Init test app */

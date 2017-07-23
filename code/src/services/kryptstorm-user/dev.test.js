@@ -14,7 +14,7 @@ import _ from "lodash";
 import TestApp from "../../dev";
 import { faker } from "./dev";
 import KryptstormUser from ".";
-import { PUBLICK_FIELDS, STATUS_NEW } from "./validate";
+import { PUBLICK_FIELDS, STATUS_NEW } from "./validation";
 
 /** Init test app */
 const app = TestApp();
