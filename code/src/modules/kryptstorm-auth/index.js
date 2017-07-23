@@ -20,18 +20,18 @@ const asyncSign$ = Bluebird.promisify(JWT.sign);
 const asyncVerify$ = Bluebird.promisify(JWT.verify);
 
 export default function Auth() {
-  /** Make notAuthenticatednRoutes and notAuthorizedRoutes is unique */
-  const _notAuthenticatednRoutes = _.uniq([
-    ...this.options().Https.notAuthenticatednRoutes,
-    ...notAuthenticatednRoutes
-  ]);
-  const _notAuthorizedRoutes = _.uniq([
-    ...this.options().Https.notAuthorizedRoutes,
-    ...notAuthorizedRoutes
-  ]);
-
   /** Register notAuthenticatednRoutes and notAuthorizedRoutes to http modules if it's exist */
   if (this.has("init:Http")) {
+    /** Make notAuthenticatednRoutes and notAuthorizedRoutes is unique */
+    const _notAuthenticatednRoutes = _.uniq([
+      ...this.options().Https.notAuthenticatednRoutes,
+      ...notAuthenticatednRoutes
+    ]);
+    const _notAuthorizedRoutes = _.uniq([
+      ...this.options().Https.notAuthorizedRoutes,
+      ...notAuthorizedRoutes
+    ]);
+
     _.assign(this.options().Https, {
       notAuthenticatednRoutes: _notAuthenticatednRoutes,
       notAuthorizedRoutes: _notAuthorizedRoutes
@@ -52,6 +52,8 @@ export default function Auth() {
     /** Validation */
     return ValidationRules.onAuthenticated(attributes)
       .then(({ username = "", password = "" }) => {
+        /** Username must be on lowercase */
+        username = _.toLower(username);
         /** Build query */
         let _query = {
           native$: [
@@ -61,7 +63,7 @@ export default function Auth() {
               status: STATUS_ACTIVE,
               validation: { $exists: false }
             },
-            { fields$: ["id", "username", "email", "password"] }
+            { fields: ["id", "username", "email", "password"] }
           ]
         };
 
@@ -83,7 +85,7 @@ export default function Auth() {
 
               const getAuthenticatedToken = (options = {}) =>
                 asyncSign$(
-                  _.pick(data$, ["id", "username", "email"]),
+                  _.pick(row, ["id", "username", "email"]),
                   Config.get("jwt.secreteKey"),
                   _.assign({}, Config.get("jwt.defaultOptions"), options)
                 );

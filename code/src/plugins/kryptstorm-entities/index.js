@@ -118,9 +118,9 @@ export default function Entities(options) {
     /** Return enity instead of attribute object */
     if (returnEntity) return _asyncLoad$(resolveQuery);
 
-    return _asyncLoad$(resolveQuery).then(row =>
-      Bluebird.resolve(_formatRow(row))
-    );
+    return _asyncLoad$(resolveQuery).then(row => {
+      return Bluebird.resolve(_formatRow(row));
+    });
   };
 
   /**

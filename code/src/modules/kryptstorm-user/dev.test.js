@@ -56,7 +56,7 @@ describe("Kryptstorm Users", function() {
 
     app
       .asyncAct$("users:create", { attributes })
-      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */

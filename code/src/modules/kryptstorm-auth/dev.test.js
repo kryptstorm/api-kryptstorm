@@ -5,11 +5,18 @@ import _ from "lodash";
 
 /** Internal modules */
 import TestApp from "../../dev";
+import KryptstormUser from "../../modules/kryptstorm-user";
 import { faker } from "../../modules/kryptstorm-user/dev";
+import { STATUS_ACTIVE } from "../../modules/kryptstorm-user/validate";
+import KryptstormAuth from ".";
 
 /** Init test app */
 const app = TestApp();
 const insertNumber = 1;
+
+/** Register KryptstormUser to test */
+app.use(KryptstormUser);
+app.use(KryptstormAuth);
 
 /** Begin test */
 describe("Kryptstorm Auth", function() {
@@ -32,7 +39,7 @@ describe("Kryptstorm Auth", function() {
               faker(
                 app.make$("mongo", "kryptstorm", "users"),
                 insertNumber,
-                {},
+                { status: STATUS_ACTIVE },
                 { fields$: ["username", "email"] }
               )
             ).then(rows => {
@@ -45,7 +52,37 @@ describe("Kryptstorm Auth", function() {
     })
   );
 
-  it("Authentication", function(done) {
-    return done();
+  it("Authentication - by username", function(done) {
+    let _user = _.pick(user, ["username", "password"]);
+    app
+      .asyncAct$("auth:authenticated", { attributes: user })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.token).to.be.exist;
+        expect(data$.renewToken).to.be.exist;
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Authentication - by email", function(done) {
+    let _user = { username: user.email, password: user.password };
+    app
+      .asyncAct$("auth:authenticated", { attributes: _user })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.token).to.be.exist;
+        expect(data$.renewToken).to.be.exist;
+        return done();
+      })
+      .catch(done);
   });
 });

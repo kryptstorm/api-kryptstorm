@@ -46,6 +46,9 @@ export const faker = (entity, number = 0, overwriteAttributes = {}, query) => {
       return false;
     }
 
+    /** Overwrite by attrbites provide by user */
+    _.assign(user, overwriteAttributes);
+
     /** If it's new, generate validation data */
     if (user.status === STATUS_NEW) {
       _.assign(user, {
@@ -57,30 +60,28 @@ export const faker = (entity, number = 0, overwriteAttributes = {}, query) => {
       });
     }
 
-    /** If it's active, may be this user need to recover their password */
-    if (user.status === STATUS_ACTIVE) {
-      let validationType = [VALIDATION_TYPE_RECOVERY][
-        Math.floor(Math.random() * 2)
-      ];
+    /** @todo It should be defined on test file of recovery password */
+    // /** If it's active, may be this user need to recover their password */
+    // if (user.status === STATUS_ACTIVE) {
+    //   let validationType = [VALIDATION_TYPE_RECOVERY][
+    //     Math.floor(Math.random() * 2)
+    //   ];
 
-      /** 
-			 * This is trick to get validationType
-			 * 1. validationType is "undefined" - get the item has not been exist
-			 * 2. validationType is VALIDATION_TYPE_RECOVERY
-			 */
-      if (validationType) {
-        _.assign(user, {
-          validation: {
-            type: VALIDATION_TYPE_RECOVERY,
-            code: getValidationToken(),
-            expiredAt: getValidationExpired()
-          }
-        });
-      }
-    }
-
-    /** Overwrite by attrbites provide by user */
-    _.assign(user, overwriteAttributes);
+    //   /**
+    // 	 * This is trick to get validationType
+    // 	 * 1. validationType is "undefined" - get the item has not been exist
+    // 	 * 2. validationType is VALIDATION_TYPE_RECOVERY
+    // 	 */
+    //   if (validationType) {
+    //     _.assign(user, {
+    //       validation: {
+    //         type: VALIDATION_TYPE_RECOVERY,
+    //         code: getValidationToken(),
+    //         expiredAt: getValidationExpired()
+    //       }
+    //     });
+    //   }
+    // }
 
     /** If enitty is truly, return array of asyncSave$ function */
     if (entity) {
