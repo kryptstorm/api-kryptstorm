@@ -68,9 +68,11 @@ describe("Kryptstorm Users", function() {
         return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
       })
       .then(({ data$ }) => {
-        /** Creation is successful */
+        /** Ensure user is created with right info */
         expect(attributes.username).is.equal(data$.username);
         expect(attributes.email).is.equal(data$.email);
+        expect(attributes.firstName).is.equal(data$.firstName);
+        expect(attributes.lastName).is.equal(data$.lastName);
         /** Create user always set status is STATUS_NEW */
         expect(STATUS_NEW).is.equal(data$.status);
         done(null);
@@ -90,6 +92,7 @@ describe("Kryptstorm Users", function() {
         expect(data$[0]).to.be.an("object");
         /** Dont return field - what is not on PUBLICK_FIELDS */
         expect(_.size(_.omit(data$[0], PUBLICK_FIELDS))).to.be.equal(0);
+        /** Ensure id is exist */
         expect(data$[0].id).to.be.exist;
         /** Set userId */
         userId = data$[0].id;
@@ -105,11 +108,12 @@ describe("Kryptstorm Users", function() {
       .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
-        /** Data must be array of item */
+        /** Data must be attributes object of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
         /** Dont return field - what is not on PUBLICK_FIELDS */
         expect(_.size(_.omit(data$, PUBLICK_FIELDS))).to.be.equal(0);
+        /** Ensure id is exist */
         expect(data$.id).to.be.exist;
         /** Finish test */
         done(null);
@@ -117,9 +121,16 @@ describe("Kryptstorm Users", function() {
       .catch(done);
   });
 
+  /**
+	 * 1. Query data with id to store data before update
+	 * 2. Update user and get return result
+	 * 3. Query data again with id to store data after update
+	 * 
+	 * The test case must is made sure unallow update field on #1, #2, #3 is not updated
+	 */
   it("Update a user by id", function(done) {
     const attributes = faker(null, 1)[0];
-    let beforeUpdateData, data;
+    let beforeUpdateData, returnData;
 
     app
       .asyncAct$("users:find_by_id", { params: { id: userId } })
@@ -132,7 +143,7 @@ describe("Kryptstorm Users", function() {
         });
       })
       .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
-        data = data$;
+        returnData = data$;
 
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
@@ -147,13 +158,13 @@ describe("Kryptstorm Users", function() {
         return app.asyncAct$("users:find_by_id", { params: { id: data$.id } });
       })
       .then(({ data$ }) => {
-        expect(_.size(beforeUpdateData)).is.equal(_.size(data));
-        expect(_.size(data)).is.equal(_.size(data$));
+        expect(beforeUpdateData.usename).is.equal(returnData.usename);
+        expect(returnData.usename).is.equal(data$.usename);
 
-        expect(beforeUpdateData.usename).is.equal(data.usename);
-        expect(data.usename).is.equal(data$.usename);
+        /** Update public fields is successful */
+        expect(attributes.firstName).is.equal(returnData.firstName);
+        expect(attributes.lastName).is.equal(returnData.lastName);
 
-        /** Update field is successful */
         done(null);
       })
       .catch(done);

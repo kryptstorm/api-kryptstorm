@@ -61,7 +61,9 @@ export const faker = (entity, number = 0, overwriteAttributes = {}) => {
     let user = {
       username: Faker.internet.userName(),
       email: Faker.internet.email(),
-      password: Bcrypt.hashSync("123456", 12),
+      password: "123456",
+      firstName: Faker.name.firstName(),
+      lastName: Faker.name.lastName(),
       status: statuses[Math.floor(Math.random() * statuses.length)],
       createdAt: Faker.date.past(),
       updatedAt: Faker.date.recent()
@@ -113,7 +115,10 @@ export const faker = (entity, number = 0, overwriteAttributes = {}) => {
     /** If enitty is truly, return array of asyncSave$ function */
     if (entity) {
       let _entity = entity.make$();
-      _.assign(_entity, user);
+      /** Save item to db, so password must be hashed */
+      _.assign(_entity, user, {
+        password: Bcrypt.hashSync(user.password, 12)
+      });
 
       result.push(_entity.asyncSave$());
     } else {

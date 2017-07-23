@@ -15,6 +15,8 @@ export const PUBLICK_FIELDS = [
   "id",
   "username",
   "email",
+  "firstName",
+  "lastName",
   "status",
   "createdAt",
   "updatedAt"
@@ -34,19 +36,24 @@ export const getValidationToken = () =>
   Crypto.createHash("md5")
     .update(String(new Date().getTime()) + Randomstring.generate(9))
     .digest("hex");
-export const getValidationExpired = () => new Date(new Date().getTime() + 604800000);
+export const getValidationExpired = () =>
+  new Date(new Date().getTime() + 604800000);
 
 /** Validation schema*/
-const rulesOnCreate = {
-  username: {
-    presence: true,
-    unique: ["mongo", "kryptstorm", "users"],
-    length: { minimum: 3, maximum: 256 }
+const ruleOnNormal = {
+  firstName: {
+    format: {
+      pattern: "[a-zA-Z.-]+",
+      flags: "i",
+      message: "can only contain letter, dot or hyphen."
+    }
   },
-  email: {
-    presence: true,
-    email: true,
-    unique: ["mongo", "kryptstorm", "users"]
+  lastName: {
+    format: {
+      pattern: "[a-zA-Z.-]+",
+      flags: "i",
+      message: "can only contain letter, dot or hyphen."
+    }
   },
   password: { presence: true, length: { minimum: 6, maximum: 256 } },
   status: {
@@ -55,19 +62,37 @@ const rulesOnCreate = {
   }
 };
 
+const rulesOnCreate = _.assign({}, ruleOnNormal, {
+  username: {
+    presence: true,
+    format: {
+      pattern: "[a-zA-Z0-9.-]+",
+      flags: "i",
+      message: "can only contain letter, number, dot and hyphen."
+    },
+    unique: ["mongo", "kryptstorm", "users"],
+    length: { minimum: 3, maximum: 256 }
+  },
+  email: {
+    presence: true,
+    email: true,
+    unique: ["mongo", "kryptstorm", "users"]
+  }
+});
+
 const rulesOnRegister = _.assign({}, rulesOnCreate, {
   confirmPassword: { equality: "password" }
 });
 
-const rulesOnUpdate = {
+const rulesOnUpdate = _.assign({}, ruleOnNormal, {
   status: {
     presence: true,
     inclusion: [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED]
   }
-};
+});
 
 export default {
   onCreate: attributes => ValidateJS.async(attributes, rulesOnCreate),
-  onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate),
-  onRegister: attributes => ValidateJS.async(attributes, rulesOnRegister)
+  onRegister: attributes => ValidateJS.async(attributes, rulesOnRegister),
+  onUpdate: attributes => ValidateJS.async(attributes, rulesOnUpdate)
 };
