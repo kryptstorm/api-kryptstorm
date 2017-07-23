@@ -22,15 +22,15 @@ import {
 } from "./validate";
 
 const statuses = [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED];
-export const faker = (entity, number = 0, overwriteAttributes = {}) => {
+export const faker = (entity, number = 0, overwriteAttributes = {}, query) => {
   let result = [],
     usernames = [],
     emails = [];
 
   while (number > 0) {
     let user = {
-      username: Faker.internet.userName(),
-      email: Faker.internet.email(),
+      username: _.toLower(Faker.internet.userName()),
+      email: _.toLower(Faker.internet.email()),
       password: "123456",
       firstName: Faker.name.firstName(),
       lastName: Faker.name.lastName(),
@@ -90,7 +90,7 @@ export const faker = (entity, number = 0, overwriteAttributes = {}) => {
         password: Bcrypt.hashSync(user.password, 12)
       });
 
-      result.push(_entity.asyncSave$());
+      result.push(_entity.asyncSave$(query));
     } else {
       /** Return array of attibute item */
       result.push(user);

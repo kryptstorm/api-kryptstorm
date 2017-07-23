@@ -58,6 +58,10 @@ export default function Users() {
           /** Defined return fields */
           let _query = { fields$: PUBLICK_FIELDS };
 
+          /** Username and email should be convert to lowercase */
+          cleanAttributes.username = _.toLower(cleanAttributes.username);
+          cleanAttributes.email = _.toLower(cleanAttributes.email);
+
           /** Password must be encrypt */
           cleanAttributes.password = Bcrypt.hashSync(
             cleanAttributes.password,

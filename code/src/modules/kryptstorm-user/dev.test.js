@@ -70,8 +70,8 @@ describe("Kryptstorm Users", function() {
       })
       .then(({ data$ }) => {
         /** Ensure user is created with right info */
-        expect(attributes.username).is.equal(data$.username);
-        expect(attributes.email).is.equal(data$.email);
+        expect(_.toLower(attributes.username)).is.equal(data$.username);
+        expect(_.toLower(attributes.email)).is.equal(data$.email);
         expect(attributes.firstName).is.equal(data$.firstName);
         expect(attributes.lastName).is.equal(data$.lastName);
         done(null);
