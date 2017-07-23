@@ -14,7 +14,7 @@
   },
   "scripts": {
     "exec-file": "./node_modules/.bin/babel-node",
-    "test": "find ./src/modules -name '*test.js' | xargs npm run --silent exec-test",
+    "test": "find ./src/services -name '*test.js' | xargs npm run --silent exec-test",
     "start-dev": "NODE_ENV=development nodemon src/bin/www.js --exec babel-node",
     "prepare-dev": "export NODE_ENV=development && find ./src/modules -name '*dev.js' | xargs npm run --silent exec-file",
     "exec-file-dev": "NODE_ENV=development npm run exec-file",

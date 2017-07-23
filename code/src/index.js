@@ -9,7 +9,7 @@ import Enitties from "./plugins/kryptstorm-entities";
 import Https from "./plugins/kryptstorm-https";
 
 /** Kryptstorm modules */
-import KryptstormUser from "./modules/kryptstorm-user";
+import KryptstormUser from "./services/kryptstorm-user";
 
 /** Init Seneca */
 const options = {

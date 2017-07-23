@@ -5,9 +5,9 @@ import _ from "lodash";
 
 /** Internal modules */
 import TestApp from "../../dev";
-import KryptstormUser from "../../modules/kryptstorm-user";
-import { faker } from "../../modules/kryptstorm-user/dev";
-import { STATUS_ACTIVE } from "../../modules/kryptstorm-user/validate";
+import KryptstormUser from "../../services/kryptstorm-user";
+import { faker } from "../../services/kryptstorm-user/dev";
+import { STATUS_ACTIVE } from "../../services/kryptstorm-user/validate";
 import KryptstormAuth from ".";
 
 /** Init test app */
