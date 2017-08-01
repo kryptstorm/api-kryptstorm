@@ -40,11 +40,11 @@ export default function Auth() {
   /** Retrieve option */
   const { collection } = this.options().Users;
 
-  this.add("init:Auth", function initAuth(args, reply) {
-    return reply();
+  this.add("init:Auth", function initAuth(args, done) {
+    return done();
   });
 
-  this.add("auth:authenticated", function authAuthorization(args, reply) {
+  this.add("auth:authenticated", function authAuthorization(args, done) {
     const { attributes = {} } = args;
     /** Validation */
     return UserValidationRules.onAuthenticated(attributes)
@@ -75,7 +75,7 @@ export default function Auth() {
 						 * 3. User is on validate (new user or need to recovery password)
 						 */
             if (_.isEmpty(row)) {
-              return reply(null, authenticationFailedResponse);
+              return done(null, authenticationFailedResponse);
             }
 
             return Bcrypt.compare(password, row.password).then(isMatch => {
@@ -99,7 +99,7 @@ export default function Auth() {
                 /** RenewToken */
                 getAuthenticatedToken({ expiresIn: 1209600 })
               ]).then(tokens => {
-                return reply(null, {
+                return done(null, {
                   data$: {
                     token: tokens[0],
                     renewToken: tokens[1]
@@ -109,10 +109,10 @@ export default function Auth() {
             });
           });
       })
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
-  this.add("auth:verify", function authVerify(args, reply) {
+  this.add("auth:verify", function authVerify(args, done) {
     const { attributes = {} } = args;
     const verificationFailedResponse = {
       errorCode$: "VERIFICATION_FAILED",
@@ -123,8 +123,8 @@ export default function Auth() {
       .then(({ token, renewToken }) =>
         asyncVerify$(token, Config.get("jwt.secreteKey"))
       )
-      .then(jwtPayload => reply(null, { data$: jwtPayload }))
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .then(jwtPayload => done(null, { data$: jwtPayload }))
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   return { name: "Auth" };
