@@ -131,8 +131,8 @@ describe("Kryptstorm Auth", function() {
         /** Data must be array of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
-        // expect(data$.token).to.be.exist;
-        // expect(data$.renewToken).to.be.exist;
+        expect(data$.token).to.be.exist;
+        expect(data$.renewToken).to.be.exist;
         expect(data$.id).to.be.exist;
         return done();
       })

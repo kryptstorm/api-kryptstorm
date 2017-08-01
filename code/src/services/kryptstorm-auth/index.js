@@ -121,16 +121,34 @@ export default function Auth() {
       message$: "Authentication has been failed."
     };
 
-    let _renewToken;
+    let _renewToken, _renewJwtPayload;
 
     return UserValidationRules.onVerify(attributes)
       .then(({ token, renewToken }) => {
         _renewToken = renewToken;
         return asyncVerify$(token, Config.get("jwt.secreteKey"));
       })
-      .then(jwtPayload => done(null, { data$: jwtPayload }))
+      .then(tokenJwtPayload => done(null, { data$: tokenJwtPayload }))
       .catch(err => asyncVerify$(_renewToken, Config.get("jwt.secreteKey")))
-      .then(jwtPayload => done(null, { data$: jwtPayload }))
+      .then(renewJwtPayload => {
+        _renewJwtPayload = _.pick(renewJwtPayload, jwtPayload);
+        return Bluebird.all([
+          /** Token */
+          getAuthenticatedToken(_renewJwtPayload),
+          /** RenewToken */
+          getAuthenticatedToken(_renewJwtPayload, {
+            expiresIn: 1209600
+          })
+        ]);
+      })
+      .then(tokens =>
+        done(null, {
+          data$: _.assign(_renewJwtPayload, {
+            token: tokens[0],
+            renewToken: tokens[1]
+          })
+        })
+      )
       .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
