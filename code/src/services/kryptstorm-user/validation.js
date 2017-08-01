@@ -47,14 +47,14 @@ export const getValidationExpired = () =>
 const ruleOnNormal = {
   firstName: {
     format: {
-      pattern: "[a-zA-Z.-]+",
+      pattern: "^[a-zA-Z.-]+$",
       flags: "i",
       message: "can only contain letter, dot or hyphen."
     }
   },
   lastName: {
     format: {
-      pattern: "[a-zA-Z.-]+",
+      pattern: "^[a-zA-Z.-]+$",
       flags: "i",
       message: "can only contain letter, dot or hyphen."
     }
@@ -69,7 +69,7 @@ const rulesOnCreate = _.assign({}, ruleOnNormal, {
   username: {
     presence: true,
     format: {
-      pattern: "[a-zA-Z0-9.-_]+",
+      pattern: "^[a-zA-Z0-9.-_]+$",
       flags: "i",
       message: "can only contain letter, number, dot, hyphen and underscore."
     },

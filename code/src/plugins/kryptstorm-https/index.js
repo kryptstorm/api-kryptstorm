@@ -4,192 +4,181 @@ import BodyParser from "body-parser";
 import Cors from "cors";
 import MethodOverride from "method-override";
 import _ from "lodash";
-import Config from "config";
-import Bluebird from "bluebird";
 
-let defaultOptions = {
-  withDefaultConfig: true,
+const defaultOptions = {
   isDebug: false,
-  queryConfig: { limit: 20, skip: 0 },
-  routes: {},
-  auth: {},
-  mws: {},
-  hooksBefore: {},
-  hooksAfter: {}
+  routes: { "/": { get: "https:default" } },
+  authentication: "",
+  athorization: ""
 };
+const _errorMessage =
+  "Server encountered an error while trying to handle request";
 
-/**
- * Example routes
- * const routes = {'get:/user': { pattern: 'user:find_all', roles: [] }}
- * 
- */
 export default function Https(options) {
-  /** Register plugin options */
+  const asyncAct$ = this.asyncAct$;
+  let server = Express();
+
+  /** Extend options */
   this.options({
     Https: this.util.deepextend(defaultOptions, options)
   });
-  /** Retrive options */
-  const { withDefaultConfig, isDebug, queryConfig } = this.options().Https;
 
-  /** Plugin variable */
-  const asyncAct$ = this.asyncAct$;
-  let server;
+  /** Retrieve option */
+  const {
+    isDebug,
+    routes,
+    authentication,
+    athorization
+  } = this.options().Https;
 
   /** Init function */
-  this.add("init:Http", function initHttp(args, reply) {
-    /** Init express server */
-    server = Express();
-    if (withDefaultConfig) {
-      /** Default config */
-      server.use(MethodOverride("X-HTTP-Method-Override"));
-      server.use(Cors({ methods: ["GET", "POST"] }));
-      server.use(BodyParser.json());
-      server.use(BodyParser.urlencoded({ extended: true }));
-    }
-
-    return reply();
-  });
-
-  /**
-	 * 1. Handle all routes
-	 * 2. Handle 404
-	 * 3. Handle error
-	 */
-  this.add("http:run", function run(args, reply) {
-    /**
-		 * We can get routes from 2 source
-		 * 1. Global config - routes
-		 * 2. Local config of each modules  - this.options().Https.routes
-		 * 
-		 * The glbal routes has more priority than local routes
-		 */
-    const { routes, auth, mws, hooksBefore, hooksAfter } = this.options().Https;
-
-    /** Return err if routes is empty */
-    if (_.isEmpty(routes) || !_.isObject(routes)) {
-      return reply(
-        new Error(
-          "You must defined routes on each module/plugin or when you reigster http plugin."
-        )
+  this.add("init:Https", function initHttp(args, done) {
+    /** This module is depend on kryptstorm-service */
+    if (!this.has("init:Services")) {
+      return done(
+        new Error("[kryptstorm-http] is depend on [kryptstorm-service]")
       );
     }
 
-    /** Execute midelware if it is not empty array */
-    if (_.isArray(mws) && !_.isEmpty(mws)) {
-      server.use((req, res, next) => {
-        /** Defined where we will store midleware data */
-        req.mws$ = {};
-        /** Execute midleware pattern */
-        let _mws = [];
-        _.each(mws, mw => _mws.push(asyncAct$(mw)));
-
-        /**
-				 * The midelware will execute with rule
-				 * First come, first served
-				 * Current data will overwrite previous data
-				 */
-        return Bluebird.all(_mws)
-          .then(mwData =>
-            _.reduce(
-              mwData,
-              (mws$, { data$ = {} }) => _.assign(mws$, data$),
-              req.mws$
-            )
-          )
-          .catch(err => next(err));
-      });
+    /** Provide authentication method */
+    if (authentication && !this.has(authentication)) {
+      return done(
+        new Error("The authentication pattern you defined is not exist.")
+      );
+    }
+    /** Provide athorization method */
+    if (authentication && !this.has(authentication)) {
+      return done(
+        new Error("The athorization pattern you defined is not exist.")
+      );
     }
 
-    /** Handle each route */
-    _.each(routes, (pattern, route) => {
-      /** route must be a string */
-      if (!_.isString(route))
-        return console.log(
-          `Routes must be a string. You gave [${JSON.stringify(route)}]`
-        );
-      /** route can not be blank */
-      if (!route) return console.log("Routes can not e blank");
+    /** Init express server with default config */
+    server.use(MethodOverride("X-HTTP-Method-Override"));
+    server.use(Cors({ methods: ["GET", "POST"] }));
+    server.use(BodyParser.json());
+    server.use(BodyParser.urlencoded({ extended: true }));
 
-      const methodAndUrl = route.split("::");
-      const method = _.toLower(methodAndUrl[0]),
-        url = methodAndUrl[1];
-      /** route must contain method and url with format _method_:_url_ */
-      if (!method || !url)
-        return console.log(
-          `Route must contain method and url with format _method_:_url_. You gave [${route}]`
-        );
-      /** Allow method was defined at api.httpVerbs */
-      if (!_.includes(Config.get("api.httpVerbs"), method))
-        return console.log(
-          `Method [${method}] is not allowed. It must be in [${JSON.stringify(
-            Config.get("api.httpVerbs")
-          )}]`
-        );
+    /** Authentication */
+    _.each({ authentication, athorization }, (pattern, mw) => {
+      if (!pattern) return;
 
-      /** Pattern must be a string */
-      if (!_.isString(pattern))
-        return console.log("Seneca pattern must defined as a string.");
-      /** Pattern mus be registered */
-      if (!this.has(pattern))
-        return console.log(`Pattern [${pattern}] has not been registered.`);
-
-      server[method](url, (req, res, next) =>
-        asyncAct$(pattern, _getPayload(req, { queryConfig }))
+      server.use((req, res, next) =>
+        asyncAct$(pattern, _preparePayload(req, res))
           .then(
             ({
               errorCode$ = "ERROR_NONE",
               message$ = "",
               data$ = {},
-              meta$ = {},
               errors$
             }) => {
-              /** 
-							 * If error$ is defined
-							 * 1. Or system error 
-							 * 2. Or validation error
-							 */
+              /** Server encountered an error while trying to handle request */
               if (!_.isUndefined(errors$)) return next(errors$);
 
-              /** If errorCode$ is not equal to ERROR_NONE, response error and error message */
+              /** If errorCode$ is not equal to ERROR_NONE, go to error handler */
               if (errorCode$ !== "ERROR_NONE") {
-                return res.json({ errorCode: errorCode$, message: message$ });
+                return next(new Error(message$ || _errorMessage));
               }
 
-              return res.json({
-                errorCode: errorCode$,
-                data: data$,
-                meta: meta$
-              });
+              res.locals[mw] = data$;
+              return next();
             }
           )
-          .catch(error => next(error))
+          .catch(next)
       );
     });
 
-    /** Default config */
-    if (withDefaultConfig) {
-      /** Handle 404 error */
-      server.use(_http404);
+    /** Mapping the routes */
+    const _routes = _prepareRoutes(routes);
+    /** Register route to express */
+    _.each(_routes, (route, url) => {
+      /** Register each method [get, post, put, delete] */
+      _.each(route, (pattern, method) => {
+        server[method](url, (req, res, next) =>
+          asyncAct$(pattern, _preparePayload(req, res))
+            .then(
+              ({
+                errorCode$ = "ERROR_NONE",
+                message$ = "",
+                data$ = {},
+                errors$
+              }) => {
+                /** Server encountered an error while trying to handle request */
+                if (!_.isUndefined(errors$)) return next(errors$);
 
-      /** Handle system error */
-      server.use(_httpError.bind(this, isDebug));
-    }
+                /** If errorCode$ is not equal to ERROR_NONE, response error code and error message */
+                if (errorCode$ !== "ERROR_NONE") {
+                  return res.json({ errorCode: errorCode$, message: message$ });
+                }
 
-    return reply(null, { data$: server });
+                /** Return JSON */
+                return res.json({
+                  errorCode: errorCode$,
+                  data: data$
+                });
+              }
+            )
+            .catch(next)
+        );
+      });
+    });
+
+    /** Handle 404 error */
+    server.use(_http404);
+
+    /** Handle system error */
+    server.use(_http500.bind(this, isDebug));
+
+    return done();
   });
 
-  return { name: "Http" };
+  /** Default route */
+  this.add("https:default", function httpDefault(args, done) {
+    return done(null, { data$: { hello: "world!" } });
+  });
+
+  return { name: "Https", exportmap: { server } };
 }
 
-const _getPayload = (req, { queryConfig = {} }) => {
+/** Prepare routes */
+const _prepareRoutes = routes => {
+  let _routes = {};
+  if (!_.isObject(routes) || _.isEmpty(routes)) return _routes;
+
+  _.each(routes, (route, url) => {
+    if (!url) return;
+    /** Short syntax */
+    if (_.isString(route)) return (_routes[url] = { get: route });
+
+    _routes[url] = {};
+    /** Full syntax */
+    if (route.get) _routes[url].get = route.get;
+    if (route.post) _routes[url].post = route.post;
+    if (route.put) _routes[url].put = route.put;
+    if (route.delete) _routes[url].delete = route.delete;
+    return true;
+  });
+
+  return _routes;
+};
+
+/** Prepare payload to put to seneca */
+const _preparePayload = (req, rest) => {
   const { query = {}, body = {}, params = {}, method } = req;
-  let { limit, page, sort, token = "" } = query;
+  const { locals = {} } = req;
+  const { _limit, _page, _sort, _token = "" } = query;
+  const { authentication = {}, authorization = {} } = locals;
 
   let _payload = {};
 
   /** Get JWT from header or query */
-  if (!token) token = req.get("Token");
-  _payload.token = !_.isString(token) ? token : "";
+  const token = req.get("Token");
+  _payload.token = !_.isString(token) ? _token : "";
+
+  /** Authentication */
+  if (authentication) _payload.authentication = authentication;
+  /** Authentication */
+  if (authorization) _payload.authorization = authorization;
 
   /** Bind _payload */
   switch (method) {
@@ -198,28 +187,28 @@ const _getPayload = (req, { queryConfig = {} }) => {
       break;
     case "GET":
       _payload.query = _preapreQuery(query, [
-        "limit",
-        "page",
-        "sortBy",
-        "asc",
-        "token"
+        "_limit",
+        "_page",
+        "_sort",
+        "_token"
       ]);
-      _payload.sort = _prepareSort(sort);
-      _payload.params = params;
-      _.assign(_payload, _preparePagination(limit, page, { queryConfig }));
+      _payload.sort = _prepareSort(_sort);
+      _payload.params = _.isObject(params) ? params : {};
+      _.assign(_payload, _preparePagination(_limit, _page));
       break;
     case "PUT":
-      _payload.params = params;
+      _payload.params = _.isObject(params) ? params : {};
       _payload.attributes = _.isObject(body) ? body : {};
       break;
     case "DELETE":
-      _payload.params = params;
+      _payload.params = _.isObject(params) ? params : {};
       break;
   }
 
   return _payload;
 };
 
+/** Prepare query */
 const _preapreQuery = (query = {}, excludeFields) => {
   /** Return empty object if query have invalid type */
   if (!_.isObject(query) || _.isEmpty(query)) {
@@ -231,6 +220,7 @@ const _preapreQuery = (query = {}, excludeFields) => {
   return _.omit(query, excludeFields);
 };
 
+/** Prepare sort */
 const _prepareSort = sort => {
   if (!_.isString(sort) || !sort) sort = "id";
   return _.reduce(
@@ -243,21 +233,22 @@ const _prepareSort = sort => {
   );
 };
 
-const _preparePagination = (limit, page, { queryConfig = {} }) => {
-  let pagination = _.assign({}, queryConfig);
-
+/** Prepare pagination */
+const _preparePagination = (limit, page) => {
+  const p = { limit: 20, offset: 0 };
   limit = parseInt(limit, 10);
   page = parseInt(page, 10);
 
   if (_.isNumber(limit) && limit > 0) {
-    pagination.limit = limit;
+    p.limit = limit;
   }
   if (_.isNumber(page) && page > 0) {
-    pagination.skip = (page - 1 < 0 ? page : page - 1) * limit;
+    p.offset = (page - 1 < 0 ? page : page - 1) * limit;
   }
-  return pagination;
+  return p;
 };
 
+/** Error 404 handler */
 const _http404 = (req, res, next) => {
   return res.status(404).json({
     errorCode: "ERROR_NOT_FOUND",
@@ -265,20 +256,9 @@ const _http404 = (req, res, next) => {
   });
 };
 
-const _httpError = (isDebug, err, req, res, next) => {
-  /** Validate error, err will be object of error */
-  if (err && !_.isError(err) && _.isObject(err)) {
-    return res.json({
-      errorCode: "VALIDATION_FAILED",
-      message: "Validation has been failed. Please try again.",
-      errors: err
-    });
-  }
-
+/** Error 500 handler */
+const _http500 = (isDebug, err, req, res, next) => {
   /** System error */
-  const message =
-    isDebug && err.message
-      ? err.message
-      : "Server encountered an error while trying to handle request";
+  const message = isDebug && err.message ? err.message : _errorMessage;
   return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
 };

@@ -13,11 +13,9 @@ import KryptstormUser from "./services/kryptstorm-user";
 import KryptstormAuth from "./services/kryptstorm-auth";
 
 /** Init Seneca */
-const options = {
-  default_plugins: { transport: false },
+const App = Seneca({
   debug: { undead: Config.get("api.isDebug") }
-};
-const App = Seneca(options);
+});
 
 /**
  * Register seneca plugins

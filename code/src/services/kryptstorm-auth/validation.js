@@ -1,8 +1,42 @@
-/** Highest rule, can do anything anywhere anytime */
-const ADMINISTRATOR = "ADMINISTRATOR";
-/** Only interact with their source */
-const OWNER = "OWNER";
+/** External modules */
+import Config from "config";
+
+/** Public fields */
+export const PUBLICK_FIELDS = ["id", "role", "permissions"];
+
+/** Highest role, can do anything anywhere anytime */
+export const ADMINISTRATOR = "ADMINISTRATOR";
+/** Only author of this source interact with their source */
+export const OWNER = "OWNER";
 /** User must logged to interact with the sourse */
-const UNAUTHORIZATION = "UNAUTHORIZATION";
+export const UNAUTHORIZATION = "UNAUTHORIZATION";
 /** This sourse is public, anyone can interact with the sourse */
-const UNAUTHENTICATION = "UNAUTHENTICATION";
+export const UNAUTHENTICATION = "UNAUTHENTICATION";
+
+/** Helper */
+const getSpecialRules = () => [
+  ADMINISTRATOR,
+  OWNER,
+  UNAUTHORIZATION,
+  UNAUTHENTICATION
+];
+
+/** Validation schema*/
+const rulesOnValidateMws = {
+  id: {
+    presence: false,
+    length: { is: 24 }
+  },
+  url: {
+    presence: true,
+    format: "^[a-zA-Z0-9.-_]+$"
+  },
+  method: {
+    presence: true,
+    inclusion: Config.get("api.httpVerbs")
+  }
+};
+
+export default {
+  onValidateMws: attributes => ValidateJS.async(attributes, rulesOnValidateMws)
+};

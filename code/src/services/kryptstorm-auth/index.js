@@ -6,7 +6,16 @@ import JWT from "jsonwebtoken";
 import Bluebird from "bluebird";
 
 /** Internal modules */
-import ValidationRules, { STATUS_ACTIVE } from "../kryptstorm-user/validation";
+import UserValidationRules, {
+  STATUS_ACTIVE
+} from "../kryptstorm-user/validation";
+import AuthValidationRules, {
+  ADMINISTRATOR,
+  OWNER,
+  UNAUTHORIZATION,
+  UNAUTHENTICATION,
+  getSpecialRules
+} from "./validation";
 
 /** Routes */
 export const routes = {
@@ -14,15 +23,32 @@ export const routes = {
   "post::/auth/verify": "auth:verify"
 };
 
+const mws = ["auth:verify"];
+
 /** Defined async jwt methods */
 const asyncSign$ = Bluebird.promisify(JWT.sign);
 const asyncVerify$ = Bluebird.promisify(JWT.verify);
 
+const authenticationFailedResponse = {
+  errorCode$: "AUTHENTICATION_FAILED",
+  message$: "Authentication has been failed."
+};
+
+const authorizationFailedResponse = {
+  errorCode$: "AUTHORIZATION_FAILED",
+  message$: "Authorization has been failed."
+};
+
+const jwtPayload = ["id", "username", "email"];
+
 export default function Auth() {
+  const asyncAct$ = this.asyncAct$;
+  let _auth = {};
   /** Register http options */
   if (this.has("init:Http")) {
     /** Register routes */
     _.assign(this.options().Https.routes, routes);
+    _auth = this.options().Https.auth;
   }
 
   this.add("init:Auth", function initAuth(args, reply) {
@@ -31,13 +57,8 @@ export default function Auth() {
 
   this.add("auth:authenticated", function authAuthorization(args, reply) {
     const { attributes = {} } = args;
-    const authenticationFailedResponse = {
-      errorCode$: "AUTHENTICATION_FAILED",
-      message$: "Authentication has been failed."
-    };
-
     /** Validation */
-    return ValidationRules.onAuthenticated(attributes)
+    return UserValidationRules.onAuthenticated(attributes)
       .then(({ username, password }) => {
         /** Username must be on lowercase */
         username = _.toLower(username);
@@ -50,7 +71,7 @@ export default function Auth() {
               status: STATUS_ACTIVE,
               validation: { $exists: false }
             },
-            { fields: ["id", "username", "email", "password"] }
+            { fields: [...jwtPayload, "password"] }
           ]
         };
 
@@ -72,7 +93,7 @@ export default function Auth() {
 
               const getAuthenticatedToken = (options = {}) =>
                 asyncSign$(
-                  _.pick(row, ["id", "username", "email"]),
+                  _.pick(row, jwtPayload),
                   Config.get("jwt.secreteKey"),
                   _.assign({}, Config.get("jwt.defaultOptions"), options)
                 );
@@ -108,12 +129,67 @@ export default function Auth() {
       message$: "Authentication has been failed."
     };
 
-    return ValidationRules.onVerify(attributes)
+    return UserValidationRules.onVerify(attributes)
       .then(({ token, renewToken }) =>
         asyncVerify$(token, Config.get("jwt.secreteKey"))
       )
       .then(jwtPayload => reply(null, { data$: jwtPayload }))
       .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+  });
+
+  this.add("auth:check_permission", function authCheckPermission(args, reply) {
+    const { mws = {}, _meta = {} } = args;
+    let _roles;
+    AuthValidationRules.onValidateMws(mws)
+      .then(({ id, url, method }) => {
+        _roles = _auth[`${method}::${url}`];
+
+        /** If role of this route empty array, only administrator can access this url */
+        if (!_.isArray(_roles) || _.isEmpty(_roles)) {
+          return Bluebird.reject(
+            new Error("Only administrator can access this url.")
+          );
+        }
+
+        /** This is public route */
+        if (_.includes(_roles, UNAUTHENTICATION) && _roles.length === 1) {
+          return Bluebird.resolve({ _pass: true });
+        }
+
+        if (!id) {
+          return Bluebird.reject(
+            new Error("Only logged user can access this url.")
+          );
+        }
+
+        /** Get role of current logged user */
+        return asyncAct$("users:find_by_id", { params: { id } });
+      })
+      .then(({ id, role, _pass = false }) => {
+        /** Pass from previous validate */
+        if (_pass) return reply(null, { data$: mws });
+
+        /** Validate ADMINISTRATOR */
+        if (_.includes(_roles, ADMINISTRATOR) && role !== ADMINISTRATOR) {
+          return Bluebird.reject(
+            new Error("Only administrator can access this url.")
+          );
+        }
+
+        /** Validate OWNER */
+        //Idea - all entity should defined userId to access by role OWNER
+
+        /** Custom role and this role is not allowed access this url */
+        if (!_.includes(_roles, role)) {
+          return Bluebird.reject(
+            new Error("You don't have permission to access this url.")
+          );
+        }
+
+        /** All thing is safe, return data to inject to midleware data */
+        return reply(null, { data$: mws });
+      })
+      .catch(err => reply(null, authorizationFailedResponse));
   });
 
   return { name: "Auth" };
