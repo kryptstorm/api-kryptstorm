@@ -58,7 +58,9 @@ describe("Kryptstorm Auth", function() {
     let _user = _.pick(user, ["username", "password"]);
     app
       .asyncAct$("auth:authenticated", { attributes: user })
-      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
+        console.log("-----------");
+        console.log(errors$);
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */
