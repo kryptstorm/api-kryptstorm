@@ -58,9 +58,7 @@ describe("Kryptstorm Auth", function() {
     let _user = _.pick(user, ["username", "password"]);
     app
       .asyncAct$("auth:authenticated", { attributes: user })
-      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
-        console.log("-----------");
-        console.log(errors$);
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */
@@ -116,6 +114,25 @@ describe("Kryptstorm Auth", function() {
         /** Data must be array of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
+        expect(data$.id).to.be.exist;
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Verification - use renew token to reset token", function(done) {
+    app
+      .asyncAct$("auth:verify", {
+        attributes: { token: user.token + "1", renewToken: user.renewToken }
+      })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        // expect(data$.token).to.be.exist;
+        // expect(data$.renewToken).to.be.exist;
         expect(data$.id).to.be.exist;
         return done();
       })

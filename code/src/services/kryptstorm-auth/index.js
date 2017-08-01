@@ -121,38 +121,17 @@ export default function Auth() {
       message$: "Authentication has been failed."
     };
 
-    let token, renewToken;
+    let _renewToken;
 
-    return (UserValidationRules.onVerify(attributes)
-        .then(({ token, renewToken }) =>
-          asyncVerify$(token, Config.get("jwt.secreteKey"))
-        )
-        .then(jwtPayload => done(null, { data$: jwtPayload }))
-        /** token is expired, renewToken should be used to authentication and reset token */
-        .catch(err => asyncVerify$(renewToken, Config.get("jwt.secreteKey")))
-        .then(jwtPayload => {
-          return Bluebird.all([
-            /** Token */
-            getAuthenticatedToken(_.pick(row, jwtPayload)),
-            /** RenewToken */
-            getAuthenticatedToken(_.pick(row, jwtPayload), {
-              expiresIn: 1209600
-            })
-          ]).then(tokens => {
-            return done(null, {
-              data$: _.assign(
-                {
-                  token: tokens[0],
-                  renewToken: tokens[1]
-                },
-                jwtPayload
-              )
-            });
-          });
-        })
-        .catch(err =>
-          done(null, { errorCode$: "SYSTEM_ERROR", errors$: err })
-        ) );
+    return UserValidationRules.onVerify(attributes)
+      .then(({ token, renewToken }) => {
+        _renewToken = renewToken;
+        return asyncVerify$(token, Config.get("jwt.secreteKey"));
+      })
+      .then(jwtPayload => done(null, { data$: jwtPayload }))
+      .catch(err => asyncVerify$(_renewToken, Config.get("jwt.secreteKey")))
+      .then(jwtPayload => done(null, { data$: jwtPayload }))
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   return { name: "Auth" };
