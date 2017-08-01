@@ -23,8 +23,6 @@ export const routes = {
   "post::/auth/verify": "auth:verify"
 };
 
-const mws = ["auth:verify"];
-
 /** Defined async jwt methods */
 const asyncSign$ = Bluebird.promisify(JWT.sign);
 const asyncVerify$ = Bluebird.promisify(JWT.verify);
@@ -135,61 +133,6 @@ export default function Auth() {
       )
       .then(jwtPayload => reply(null, { data$: jwtPayload }))
       .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
-  });
-
-  this.add("auth:check_permission", function authCheckPermission(args, reply) {
-    const { mws = {}, _meta = {} } = args;
-    let _roles;
-    AuthValidationRules.onValidateMws(mws)
-      .then(({ id, url, method }) => {
-        _roles = _auth[`${method}::${url}`];
-
-        /** If role of this route empty array, only administrator can access this url */
-        if (!_.isArray(_roles) || _.isEmpty(_roles)) {
-          return Bluebird.reject(
-            new Error("Only administrator can access this url.")
-          );
-        }
-
-        /** This is public route */
-        if (_.includes(_roles, UNAUTHENTICATION) && _roles.length === 1) {
-          return Bluebird.resolve({ _pass: true });
-        }
-
-        if (!id) {
-          return Bluebird.reject(
-            new Error("Only logged user can access this url.")
-          );
-        }
-
-        /** Get role of current logged user */
-        return asyncAct$("users:find_by_id", { params: { id } });
-      })
-      .then(({ id, role, _pass = false }) => {
-        /** Pass from previous validate */
-        if (_pass) return reply(null, { data$: mws });
-
-        /** Validate ADMINISTRATOR */
-        if (_.includes(_roles, ADMINISTRATOR) && role !== ADMINISTRATOR) {
-          return Bluebird.reject(
-            new Error("Only administrator can access this url.")
-          );
-        }
-
-        /** Validate OWNER */
-        //Idea - all entity should defined userId to access by role OWNER
-
-        /** Custom role and this role is not allowed access this url */
-        if (!_.includes(_roles, role)) {
-          return Bluebird.reject(
-            new Error("You don't have permission to access this url.")
-          );
-        }
-
-        /** All thing is safe, return data to inject to midleware data */
-        return reply(null, { data$: mws });
-      })
-      .catch(err => reply(null, authorizationFailedResponse));
   });
 
   return { name: "Auth" };

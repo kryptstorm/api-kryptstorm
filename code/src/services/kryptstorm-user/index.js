@@ -19,22 +19,7 @@ import ValidationRules, {
   getValidationExpired
 } from "./validation";
 
-/** Routes */
-export const routes = {
-  "post::/users": "users:create",
-  "get::/users": "users:find_all",
-  "get::/users/:id": "users:find_by_id",
-  "put::/users/:id": "users:update_by_id",
-  "delete::/users/:id": "users:delete_by_id"
-};
-
 export default function Users() {
-  /** Register http options */
-  if (this.has("init:Http")) {
-    /** Register routes */
-    _.assign(this.options().Https, { routes });
-  }
-
   this.add("init:Users", function initUsers(args, reply) {
     return reply();
   });

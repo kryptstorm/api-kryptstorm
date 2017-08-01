@@ -12,6 +12,9 @@ import Https from "./plugins/kryptstorm-https";
 import KryptstormUser from "./services/kryptstorm-user";
 import KryptstormAuth from "./services/kryptstorm-auth";
 
+/** Http routes */
+import routes from "./routes";
+
 /** Init Seneca */
 const App = Seneca({
   debug: { undead: Config.get("api.isDebug") }
@@ -35,7 +38,8 @@ App.use(Services);
 App.use(Enitties, { queryConfig: { limit$: Config.get("api.limitRow") } });
 /** Kryptstorm Http */
 App.use(Https, {
-  isDebug: Config.get("api.isDebug")
+  isDebug: Config.get("api.isDebug"),
+  routes
 });
 
 /** Register kryptstorm service */
