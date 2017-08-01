@@ -17,12 +17,6 @@ import AuthValidationRules, {
   getSpecialRules
 } from "./validation";
 
-/** Routes */
-export const routes = {
-  "post::/auth": "auth:authenticated",
-  "post::/auth/verify": "auth:verify"
-};
-
 /** Defined async jwt methods */
 const asyncSign$ = Bluebird.promisify(JWT.sign);
 const asyncVerify$ = Bluebird.promisify(JWT.verify);
@@ -42,12 +36,9 @@ const jwtPayload = ["id", "username", "email"];
 export default function Auth() {
   const asyncAct$ = this.asyncAct$;
   let _auth = {};
-  /** Register http options */
-  if (this.has("init:Http")) {
-    /** Register routes */
-    _.assign(this.options().Https.routes, routes);
-    _auth = this.options().Https.auth;
-  }
+
+  /** Retrieve option */
+  const { collection } = this.options().Users;
 
   this.add("init:Auth", function initAuth(args, reply) {
     return reply();
@@ -73,7 +64,8 @@ export default function Auth() {
           ]
         };
 
-        return this.make$("mongo", "kryptstorm", "users")
+        return this.make$
+          .apply(null, collection)
           .asyncLoad$(_query)
           .then(row => {
             /**

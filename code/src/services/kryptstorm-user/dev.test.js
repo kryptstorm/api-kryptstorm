@@ -19,6 +19,8 @@ import { PUBLICK_FIELDS, STATUS_NEW } from "./validation";
 /** Init test app */
 const app = TestApp();
 const insertNumber = 5;
+const testCollection = ["mongo", "test_kryptstorm", "users"];
+const testCollectionName = testCollection[1] + testCollection[2];
 
 /** Register KryptstormUser to test */
 app.use(KryptstormUser);
@@ -33,18 +35,18 @@ describe("Kryptstorm Users", function() {
 	 */
   before(done =>
     app.ready(() => {
-      UserCollection = app.make$("mongo", "kryptstorm", "users");
+      UserCollection = app.make$.apply(null, testCollection);
 
       return UserCollection.asyncNative$()
         .then(db =>
           /** Delete all document by node-mongo-native */
           db
-            .collection("kryptstorm_users")
+            .collection(testCollectionName)
             .removeMany()
             .then(() =>
-              Bluebird.all(
-                faker(app.make$("mongo", "kryptstorm", "users"), insertNumber)
-              ).then(() => done())
+              Bluebird.all(faker(UserCollection, insertNumber)).then(() =>
+                done()
+              )
             )
         )
         .catch(done);

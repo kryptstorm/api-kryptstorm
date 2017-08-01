@@ -171,10 +171,10 @@ export default function Entities(options) {
     return _asyncNative$();
   };
 
-  this.add("init:Entities", function initEntities(args, reply) {
+  this.add("init:Entities", function initEntities(args, done) {
     /** Register validator */
     _.assign(ValidateJS.validators, _validators(this));
-    return reply();
+    return done();
   });
 
   return { name: "Entities" };

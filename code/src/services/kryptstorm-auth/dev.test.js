@@ -13,9 +13,11 @@ import KryptstormAuth from ".";
 /** Init test app */
 const app = TestApp();
 const insertNumber = 1;
+const testCollection = ["mongo", "test_kryptstorm", "users"];
+const testCollectionName = testCollection[1] + testCollection[2];
 
 /** Register KryptstormUser to test */
-app.use(KryptstormUser);
+app.use(KryptstormUser, { collection: testCollection });
 app.use(KryptstormAuth);
 
 /** Begin test */
@@ -29,15 +31,15 @@ describe("Kryptstorm Auth", function() {
 	 */
   before(done =>
     app.ready(() => {
-      UserCollection = app.make$("mongo", "kryptstorm", "users");
+      UserCollection = app.make$.apply(null, testCollection);
 
       return UserCollection.asyncNative$()
         .then(db =>
           /** Delete all document by node-mongo-native */
-          db.collection("kryptstorm_users").removeMany().then(() =>
+          db.collection(testCollectionName).removeMany().then(() =>
             Bluebird.all(
               faker(
-                app.make$("mongo", "kryptstorm", "users"),
+                UserCollection,
                 insertNumber,
                 { status: STATUS_ACTIVE },
                 { fields$: ["username", "email"] }

@@ -19,17 +19,27 @@ import ValidationRules, {
   getValidationExpired
 } from "./validation";
 
-export default function Users() {
-  this.add("init:Users", function initUsers(args, reply) {
-    return reply();
+const defaultOptions = { collection: ["mongo", "kryptstorm", "users"] };
+
+export default function Users(options) {
+  /** Extend options */
+  this.options({
+    Users: this.util.deepextend(defaultOptions, options)
   });
 
-  this.add("users:create", function usersCreate(args, reply) {
+  /** Retrieve option */
+  const { collection } = this.options().Users;
+
+  this.add("init:Users", function initUsers(args, done) {
+    return done();
+  });
+
+  this.add("users:create", function usersCreate(args, done) {
     let { attributes = {} } = args;
 
     /** This is a stupid action if you allow user create new user without attributes */
     if (_.isEmpty(attributes)) {
-      reply(null, {
+      done(null, {
         errorCode$: "INVALID_ATTRIBUTES",
         message$: "You cannot create user with empty attributes."
       });
@@ -84,21 +94,21 @@ export default function Users() {
           cleanAttributes.fields$ = () => _fields$;
 
           /** Create new instance */
-          let _user = this.make$("mongo", "kryptstorm", "users");
+          let _user = this.make$.apply(null, collection);
           /** Set attributes */
           _.assign(_user, cleanAttributes);
 
           /** Save user */
           return _user
             .asyncSave$(_query)
-            .then(row => reply(null, { data$: row }));
+            .then(row => done(null, { data$: row }));
         })
         .catch(err =>
-          reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err })
+          done(null, { errorCode$: "SYSTEM_ERROR", errors$: err })
         ) );
   });
 
-  this.add("users:find_all", function usersFindAll(args, reply) {
+  this.add("users:find_all", function usersFindAll(args, done) {
     let { query = {}, sort = {}, limit, skip } = args;
     /** Build query */
     let _query = { fields$: PUBLICK_FIELDS };
@@ -113,17 +123,18 @@ export default function Users() {
     if (!_.isUndefined(_query.status)) _query.status = Number(_query.status);
 
     /** Load data */
-    return this.make$("mongo", "kryptstorm", "users")
+    return this.make$
+      .apply(null, collection)
       .asyncList$(_query)
-      .then(rows => reply(null, { data$: rows }))
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .then(rows => done(null, { data$: rows }))
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
-  this.add("users:find_by_id", function usersFindById(args, reply) {
+  this.add("users:find_by_id", function usersFindById(args, done) {
     let { params = {} } = args;
     /** If id is not exist */
     if (!params.id) {
-      return reply(null, {
+      return done(null, {
         errorCode$: "DATA_NOT_FOUND",
         message$: "User is not found. May be this user has been deleted."
       });
@@ -131,7 +142,7 @@ export default function Users() {
 
     /** If id is not valid mongoID */
     if (!Validator.isMongoId(params.id)) {
-      reply(null, {
+      done(null, {
         errorCode$: "INVALID_PARAMS",
         message$: `The user with id (${String(
           params.id
@@ -143,27 +154,28 @@ export default function Users() {
     let _query = { fields$: PUBLICK_FIELDS, id: params.id };
 
     /** Load data */
-    return this.make$("mongo", "kryptstorm", "users")
+    return this.make$
+      .apply(null, collection)
       .asyncLoad$(_query)
       .then(row => {
         /** User with id is not found. */
         if (_.isEmpty(row)) {
-          return reply(null, {
+          return done(null, {
             errorCode$: "DATA_NOT_FOUND",
             message$: `User (with id ${params.id}) is not found. May be this user has been deleted.`
           });
         }
-        return reply(null, { data$: row });
+        return done(null, { data$: row });
       })
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
-  this.add("users:update_by_id", function usersFindById(args, reply) {
+  this.add("users:update_by_id", function usersFindById(args, done) {
     let { params = {}, attributes = {} } = args;
 
     /** This is a stupid action if you allow user update a user without attributes */
     if (_.isEmpty(attributes)) {
-      reply(null, {
+      done(null, {
         errorCode$: "INVALID_ATTRIBUTES",
         message$: "You cannot update user with empty attributes."
       });
@@ -171,7 +183,7 @@ export default function Users() {
 
     /** If id is not exist */
     if (!params.id) {
-      return reply(null, {
+      return done(null, {
         errorCode$: "DATA_NOT_FOUND",
         message$: "User is not found. May be this user has been deleted."
       });
@@ -179,7 +191,7 @@ export default function Users() {
 
     /** If id is not valid mongoID */
     if (!Validator.isMongoId(params.id)) {
-      reply(null, {
+      done(null, {
         errorCode$: "INVALID_PARAMS",
         message$: `The user with id (${String(
           params.id
@@ -194,12 +206,13 @@ export default function Users() {
 		 * Load data
 		 * and you want row is entity instead of array of attributes
 		 */
-    return this.make$("mongo", "kryptstorm", "users")
+    return this.make$
+      .apply(null, collection)
       .asyncLoad$(_query, true)
       .then(user => {
         /** User with id is not found. */
         if (!user || !user.id) {
-          return reply(null, {
+          return done(null, {
             errorCode$: "DATA_NOT_FOUND",
             message$: `User (with id ${params.id}) is not found. May be this user has been deleted.`
           });
@@ -242,19 +255,19 @@ export default function Users() {
               /** Save user */
               return user
                 .asyncSave$(_query)
-                .then(row => reply(null, { data$: row }));
+                .then(row => done(null, { data$: row }));
             })
         );
       })
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
-  this.add("users:delete_by_id", function usersFindById(args, reply) {
+  this.add("users:delete_by_id", function usersFindById(args, done) {
     let { params = {} } = args;
 
     /** If id is not exist */
     if (!params.id) {
-      return reply(null, {
+      return done(null, {
         errorCode$: "DATA_NOT_FOUND",
         message$: "User is not found. May be this user has been deleted."
       });
@@ -262,7 +275,7 @@ export default function Users() {
 
     /** If id is not valid mongoID */
     if (!Validator.isMongoId(params.id)) {
-      reply(null, {
+      done(null, {
         errorCode$: "INVALID_PARAMS",
         message$: `The user with id (${String(
           params.id
@@ -274,10 +287,11 @@ export default function Users() {
     let _query = { fields$: PUBLICK_FIELDS, id: params.id };
 
     /** Remove user */
-    return this.make$("mongo", "kryptstorm", "users")
+    return this.make$
+      .apply(null, collection)
       .asyncRemove$(_query)
-      .then(row => reply(null, { data$: row }))
-      .catch(err => reply(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .then(row => done(null, { data$: row }))
+      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
   });
 
   return { name: "Users" };
