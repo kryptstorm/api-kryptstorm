@@ -20,7 +20,7 @@ import { PUBLICK_FIELDS, STATUS_NEW } from "./validation";
 const app = TestApp();
 const insertNumber = 5;
 const testCollection = ["mongo", "test_kryptstorm", "users"];
-const testCollectionName = testCollection[1] + testCollection[2];
+const testCollectionName = testCollection[1] + "_" + testCollection[2];
 
 /** Register KryptstormUser to test */
 app.use(KryptstormUser);
@@ -193,6 +193,21 @@ describe("Kryptstorm Users", function() {
         expect(data$).to.be.not.exist;
         done(null);
       })
+      .catch(done);
+  });
+
+  /** Clear all test data after test is finish */
+  after(done => {
+    UserCollection.make$()
+      .asyncNative$()
+      /** Delete all document by node-mongo-native */
+      .then(db => db.collection(testCollectionName).removeMany())
+      /**
+			 * @see https://developer.mozilla.org/vi/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+			 * First params is "this" - we use null
+			 * Second param is "error" - we dont have error, so set it to null
+			 */
+      .then(done.bind(null, null))
       .catch(done);
   });
 });
