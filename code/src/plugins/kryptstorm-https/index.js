@@ -8,8 +8,7 @@ import _ from "lodash";
 const defaultOptions = {
   isDebug: false,
   routes: { "/": { get: "https:default" } },
-  authentication: "",
-  athorization: ""
+  authorization: ""
 };
 const _errorMessage =
   "Server encountered an error while trying to handle request";
@@ -24,12 +23,7 @@ export default function Https(options) {
   });
 
   /** Retrieve option */
-  const {
-    isDebug,
-    routes,
-    authentication,
-    athorization
-  } = this.options().Https;
+  const { isDebug, routes, authorization } = this.options().Https;
 
   /** Init function */
   this.add("init:Https", function initHttp(args, done) {
@@ -39,17 +33,10 @@ export default function Https(options) {
         new Error("[kryptstorm-http] is depend on [kryptstorm-service]")
       );
     }
-
-    /** Provide authentication method */
-    if (authentication && !this.has(authentication)) {
+    /** Provide authorization method */
+    if (authorization && !this.has(authorization)) {
       return done(
-        new Error("The authentication pattern you defined is not exist.")
-      );
-    }
-    /** Provide athorization method */
-    if (authentication && !this.has(authentication)) {
-      return done(
-        new Error("The athorization pattern you defined is not exist.")
+        new Error("The authorization pattern you defined is not exist.")
       );
     }
 
@@ -59,12 +46,16 @@ export default function Https(options) {
     server.use(BodyParser.json());
     server.use(BodyParser.urlencoded({ extended: true }));
 
-    /** Authentication */
-    _.each({ authentication, athorization }, (pattern, mw) => {
-      if (!pattern) return;
+    /** Authorization midleware */
+    if (authorization) {
+      if (!this.has(authorization)) {
+        return done(
+          new Error("The athorization pattern you defined is not exist.")
+        );
+      }
 
       server.use((req, res, next) =>
-        asyncAct$(pattern, _preparePayload(req, res))
+        asyncAct$(authorization, _preparePayload(req, res))
           .then(
             ({
               errorCode$ = "ERROR_NONE",
@@ -80,13 +71,13 @@ export default function Https(options) {
                 return next(new Error(message$ || _errorMessage));
               }
 
-              res.locals[mw] = data$;
+              res.locals.authorization = data$;
               return next();
             }
           )
           .catch(next)
       );
-    });
+    }
 
     /** Mapping the routes */
     const _routes = _prepareRoutes(routes);
@@ -167,7 +158,7 @@ const _preparePayload = (req, rest) => {
   const { query = {}, body = {}, params = {}, method } = req;
   const { locals = {} } = req;
   const { _limit, _page, _sort, _token = "" } = query;
-  const { authentication = {}, authorization = {} } = locals;
+  const { authorization = {} } = locals;
 
   let _payload = {};
 
@@ -175,9 +166,7 @@ const _preparePayload = (req, rest) => {
   const token = req.get("Token");
   _payload.token = !_.isString(token) ? _token : "";
 
-  /** Authentication */
-  if (authentication) _payload.authentication = authentication;
-  /** Authentication */
+  /** Authorization */
   if (authorization) _payload.authorization = authorization;
 
   /** Bind _payload */
