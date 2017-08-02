@@ -9,8 +9,8 @@ import Seneca from "seneca";
 import Config from "config";
 
 /** Kryptstorm plugins */
-import Services from "./plugins/kryptstorm-services";
-import Enitties from "./plugins/kryptstorm-entities";
+import KryptstormServices from "./plugins/kryptstorm-services";
+import KryptstormEnitties from "./plugins/kryptstorm-entities";
 
 const TestApp = fn =>
   Seneca({
@@ -19,8 +19,8 @@ const TestApp = fn =>
     .test(fn)
     .use("mongo-store", Config.get("mongo"))
     .use("entity")
-    .use(Services)
-    .use(Enitties);
+    .use(KryptstormServices)
+    .use(KryptstormEnitties);
 
 /** Export test to other file can use it to init test app */
 export default TestApp;

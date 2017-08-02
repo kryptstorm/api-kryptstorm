@@ -4,9 +4,9 @@ import Config from "config";
 import _ from "lodash";
 
 /** Kryptstorm plugins */
-import Services from "./plugins/kryptstorm-services";
-import Enitties from "./plugins/kryptstorm-entities";
-import Https from "./plugins/kryptstorm-https";
+import KryptstormServices from "./plugins/kryptstorm-services";
+import KryptstormEnitties from "./plugins/kryptstorm-entities";
+import KryptstormHttps from "./plugins/kryptstorm-https";
 
 /** Kryptstorm modules */
 import KryptstormUser from "./services/kryptstorm-user";
@@ -33,11 +33,13 @@ App.use("entity");
 
 /** Register kryptstorm Plugin */
 /** Kryptstorm Service */
-App.use(Services);
+App.use(KryptstormServices);
 /** Kryptstorm Entities */
-App.use(Enitties, { queryConfig: { limit$: Config.get("api.limitRow") } });
+App.use(KryptstormEnitties, {
+  queryConfig: { limit$: Config.get("api.limitRow") }
+});
 /** Kryptstorm Http */
-App.use(Https, {
+App.use(KryptstormHttps, {
   isDebug: Config.get("api.isDebug"),
   routes
 });
