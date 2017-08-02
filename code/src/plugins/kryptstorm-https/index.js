@@ -7,8 +7,7 @@ import _ from "lodash";
 
 const defaultOptions = {
   isDebug: false,
-  routes: { "/": { get: "https:default" } },
-  authorization: ""
+  routes: { "/": { get: "https:default" } }
 };
 const _errorMessage =
   "Server encountered an error while trying to handle request";
@@ -23,7 +22,7 @@ export default function Https(options) {
   });
 
   /** Retrieve option */
-  const { isDebug, routes, authorization } = this.options().Https;
+  const { isDebug, routes } = this.options().Https;
 
   /** Init function */
   this.add("init:Https", function initHttp(args, done) {
@@ -33,51 +32,12 @@ export default function Https(options) {
         new Error("[kryptstorm-http] is depend on [kryptstorm-service]")
       );
     }
-    /** Provide authorization method */
-    if (authorization && !this.has(authorization)) {
-      return done(
-        new Error("The authorization pattern you defined is not exist.")
-      );
-    }
 
     /** Init express server with default config */
     server.use(MethodOverride("X-HTTP-Method-Override"));
     server.use(Cors({ methods: ["GET", "POST"] }));
     server.use(BodyParser.json());
     server.use(BodyParser.urlencoded({ extended: true }));
-
-    /** Authorization midleware */
-    if (authorization) {
-      if (!this.has(authorization)) {
-        return done(
-          new Error("The athorization pattern you defined is not exist.")
-        );
-      }
-
-      server.use((req, res, next) =>
-        asyncAct$(authorization, _preparePayload(req, res))
-          .then(
-            ({
-              errorCode$ = "ERROR_NONE",
-              message$ = "",
-              data$ = {},
-              errors$
-            }) => {
-              /** Server encountered an error while trying to handle request */
-              if (!_.isUndefined(errors$)) return next(errors$);
-
-              /** If errorCode$ is not equal to ERROR_NONE, go to error handler */
-              if (errorCode$ !== "ERROR_NONE") {
-                return next(new Error(message$ || _errorMessage));
-              }
-
-              res.locals.authorization = data$;
-              return next();
-            }
-          )
-          .catch(next)
-      );
-    }
 
     /** Mapping the routes */
     const _routes = _prepareRoutes(routes);
