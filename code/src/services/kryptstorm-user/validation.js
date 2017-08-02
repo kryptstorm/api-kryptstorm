@@ -7,9 +7,6 @@ import Bluebird from "bluebird";
 import _ from "lodash";
 import Randomstring from "randomstring";
 
-/** Internal modules */
-import App from "../..";
-
 /** Public fields */
 export const PUBLICK_FIELDS = [
   "id",
@@ -94,19 +91,6 @@ const rulesOnUpdate = _.assign({}, ruleOnNormal, {
     inclusion: [STATUS_NEW, STATUS_ACTIVE, STATUS_LOCKED, STATUS_DELETED]
   }
 });
-
-const ruleOnAuthenticated = {
-  username: {
-    presence: true,
-    length: { minimum: 3, maximum: 256 }
-  },
-  password: { presence: true, length: { minimum: 6, maximum: 256 } }
-};
-
-const ruleOnVerify = {
-  accessToken: { presence: true },
-  refreshToken: { presence: false }
-};
 
 export default {
   onCreate: attributes => ValidateJS.async(attributes, rulesOnCreate),

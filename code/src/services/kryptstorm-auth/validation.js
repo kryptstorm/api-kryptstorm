@@ -1,5 +1,6 @@
 /** External modules */
 import Config from "config";
+import ValidateJS from "validate.js";
 
 /** Public fields */
 export const PUBLICK_FIELDS = ["id", "role", "permissions"];
@@ -17,3 +18,23 @@ const getSpecialRules = () => [
   UNAUTHORIZATION,
   UNAUTHENTICATION
 ];
+
+/** Validation schema*/
+const ruleOnAuthenticated = {
+  username: {
+    presence: true,
+    length: { minimum: 3, maximum: 256 }
+  },
+  password: { presence: true, length: { minimum: 6, maximum: 256 } }
+};
+
+const ruleOnVerify = {
+  accessToken: { presence: true },
+  refreshToken: { presence: false }
+};
+
+export default {
+  onAuthenticated: attributes =>
+    ValidateJS.async(attributes, ruleOnAuthenticated),
+  onVerify: attributes => ValidateJS.async(attributes, ruleOnVerify)
+};

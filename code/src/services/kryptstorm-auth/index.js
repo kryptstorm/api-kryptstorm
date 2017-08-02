@@ -6,9 +6,7 @@ import JWT from "jsonwebtoken";
 import Bluebird from "bluebird";
 
 /** Internal modules */
-import UserValidationRules, {
-  STATUS_ACTIVE
-} from "../kryptstorm-user/validation";
+import { STATUS_ACTIVE } from "../kryptstorm-user/validation";
 import AuthValidationRules, {
   ADMINISTRATOR,
   OWNER,
@@ -59,7 +57,7 @@ export default function Auth() {
   this.add("auth:authenticated", function authAuthorization(args, done) {
     const { attributes = {} } = args;
     /** Validation */
-    return UserValidationRules.onAuthenticated(attributes)
+    return AuthValidationRules.onAuthenticated(attributes)
       .then(({ username, password }) => {
         /** Username must be on lowercase */
         username = _.toLower(username);
@@ -128,7 +126,7 @@ export default function Auth() {
 
     let _refreshToken, _refreshJwtPayload;
 
-    return UserValidationRules.onVerify(attributes)
+    return AuthValidationRules.onVerify(attributes)
       .then(({ accessToken, refreshToken }) => {
         _refreshToken = refreshToken;
         return asyncVerify$(accessToken, Config.get("jwt.secreteKey"));
