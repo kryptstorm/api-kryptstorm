@@ -157,14 +157,16 @@ const _prepareRoutes = routes => {
 const _preparePayload = (req, rest) => {
   const { query = {}, body = {}, params = {}, method } = req;
   const { locals = {} } = req;
-  const { _limit, _page, _sort, _token = "" } = query;
+  const { _limit, _page, _sort, _accessToken = "", _refreshToken = "" } = query;
   const { authorization = {} } = locals;
 
   let _payload = {};
 
   /** Get JWT from header or query */
-  const token = req.get("Token");
-  _payload.token = !_.isString(token) ? _token : "";
+  const accessToken = req.get("AccessToken");
+  const refreshToken = req.get("refreshToken");
+  _payload.accessToken = !_.isString(accessToken) ? _accessToken : "";
+  _payload.refreshToken = !_.isString(refreshToken) ? _refreshToken : "";
 
   /** Authorization */
   if (authorization) _payload.authorization = authorization;

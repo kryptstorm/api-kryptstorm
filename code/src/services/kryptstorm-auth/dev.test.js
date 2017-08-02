@@ -64,8 +64,8 @@ describe("Kryptstorm Auth", function() {
         /** Data must be array of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
-        expect(data$.token).to.be.exist;
-        expect(data$.renewToken).to.be.exist;
+        expect(data$.accessToken).to.be.exist;
+        expect(data$.refreshToken).to.be.exist;
         return done();
       })
       .catch(done);
@@ -81,8 +81,8 @@ describe("Kryptstorm Auth", function() {
         /** Data must be array of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
-        expect(data$.token).to.be.exist;
-        expect(data$.renewToken).to.be.exist;
+        expect(data$.accessToken).to.be.exist;
+        expect(data$.refreshToken).to.be.exist;
 
         _.assign(user, data$);
         return done();
@@ -90,40 +90,27 @@ describe("Kryptstorm Auth", function() {
       .catch(done);
   });
 
-  it("Verification - by token", function(done) {
-    app
-      .asyncAct$("auth:verify", { attributes: { token: user.token } })
-      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
-        /** Error is ERROR_NONE */
-        expect(errorCode$).to.be.equal("ERROR_NONE");
-        /** Data must be array of item */
-        expect(data$).to.be.exist;
-        expect(data$).to.be.an("object");
-        expect(data$.id).to.be.exist;
-        return done();
-      })
-      .catch(done);
-  });
-
-  it("Verification - by renew token", function(done) {
-    app
-      .asyncAct$("auth:verify", { attributes: { token: user.renewToken } })
-      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
-        /** Error is ERROR_NONE */
-        expect(errorCode$).to.be.equal("ERROR_NONE");
-        /** Data must be array of item */
-        expect(data$).to.be.exist;
-        expect(data$).to.be.an("object");
-        expect(data$.id).to.be.exist;
-        return done();
-      })
-      .catch(done);
-  });
-
-  it("Verification - use renew token to reset token", function(done) {
+  it("Verification - by access token", function(done) {
     app
       .asyncAct$("auth:verify", {
-        attributes: { token: user.token + "1", renewToken: user.renewToken }
+        attributes: { accessToken: user.accessToken }
+      })
+      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.id).to.be.exist;
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Verification - by refresh token", function(done) {
+    app
+      .asyncAct$("auth:verify", {
+        attributes: { accessToken: user.refreshToken }
       })
       .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
@@ -131,8 +118,28 @@ describe("Kryptstorm Auth", function() {
         /** Data must be array of item */
         expect(data$).to.be.exist;
         expect(data$).to.be.an("object");
-        expect(data$.token).to.be.exist;
-        expect(data$.renewToken).to.be.exist;
+        expect(data$.id).to.be.exist;
+        return done();
+      })
+      .catch(done);
+  });
+
+  it("Verification - use refresh token to reset access token", function(done) {
+    app
+      .asyncAct$("auth:verify", {
+        attributes: {
+          accessToken: user.accessToken + "1",
+          refreshToken: user.refreshToken
+        }
+      })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        expect(data$.accessToken).to.be.exist;
+        expect(data$.refreshToken).to.be.exist;
         expect(data$.id).to.be.exist;
         return done();
       })

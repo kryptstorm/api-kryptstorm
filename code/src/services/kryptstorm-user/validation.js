@@ -104,8 +104,8 @@ const ruleOnAuthenticated = {
 };
 
 const ruleOnVerify = {
-  token: { presence: true },
-  renewToken: { presence: false }
+  accessToken: { presence: true },
+  refreshToken: { presence: false }
 };
 
 export default {

@@ -38,7 +38,7 @@ export default function Auth() {
   let _auth = {};
 
   /** Retrieve option */
-  const { collection } = this.options().Users;
+  const { collection } = this.options().Users || {};
 
   const getAuthenticatedToken = (data, options = {}) =>
     asyncSign$(
@@ -48,6 +48,11 @@ export default function Auth() {
     );
 
   this.add("init:Auth", function initAuth(args, done) {
+    if (!collection) {
+      return done(
+        new Error("[kryptstorm-auth] is depend on [kryptstorm-user]")
+      );
+    }
     return done();
   });
 
@@ -90,28 +95,28 @@ export default function Auth() {
 
               /**
 							 * Return 2 token
-							 * If [token] is expired, [renewToken] will help user still login and reset [token]
+							 * If [token] is expired, [refreshToken] will help user still login and reset [token]
 							 * It's help mobile app can still logged forever
 							 */
               return Bluebird.all([
                 /** Token */
                 getAuthenticatedToken(_.pick(row, jwtPayload)),
-                /** RenewToken */
+                /** refreshToken */
                 getAuthenticatedToken(_.pick(row, jwtPayload), {
                   expiresIn: 1209600
                 })
               ]).then(tokens => {
                 return done(null, {
                   data$: {
-                    token: tokens[0],
-                    renewToken: tokens[1]
+                    accessToken: tokens[0],
+                    refreshToken: tokens[1]
                   }
                 });
               });
             });
           });
       })
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   this.add("auth:verify", function authVerify(args, done) {
@@ -121,35 +126,35 @@ export default function Auth() {
       message$: "Authentication has been failed."
     };
 
-    let _renewToken, _renewJwtPayload;
+    let _refreshToken, _refreshJwtPayload;
 
     return UserValidationRules.onVerify(attributes)
-      .then(({ token, renewToken }) => {
-        _renewToken = renewToken;
-        return asyncVerify$(token, Config.get("jwt.secreteKey"));
+      .then(({ accessToken, refreshToken }) => {
+        _refreshToken = refreshToken;
+        return asyncVerify$(accessToken, Config.get("jwt.secreteKey"));
       })
-      .then(tokenJwtPayload => done(null, { data$: tokenJwtPayload }))
-      .catch(err => asyncVerify$(_renewToken, Config.get("jwt.secreteKey")))
-      .then(renewJwtPayload => {
-        _renewJwtPayload = _.pick(renewJwtPayload, jwtPayload);
+      .then(accessTokenPayload => done(null, { data$: accessTokenPayload }))
+      .catch(err => asyncVerify$(_refreshToken, Config.get("jwt.secreteKey")))
+      .then(refreshTokenPayload => {
+        _refreshJwtPayload = _.pick(refreshTokenPayload, jwtPayload);
         return Bluebird.all([
           /** Token */
-          getAuthenticatedToken(_renewJwtPayload),
-          /** RenewToken */
-          getAuthenticatedToken(_renewJwtPayload, {
+          getAuthenticatedToken(_refreshJwtPayload),
+          /** refreshToken */
+          getAuthenticatedToken(_refreshJwtPayload, {
             expiresIn: 1209600
           })
         ]);
       })
       .then(tokens =>
         done(null, {
-          data$: _.assign(_renewJwtPayload, {
-            token: tokens[0],
-            renewToken: tokens[1]
+          data$: _.assign(_refreshJwtPayload, {
+            accessToken: tokens[0],
+            refreshToken: tokens[1]
           })
         })
       )
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   return { name: "Auth" };

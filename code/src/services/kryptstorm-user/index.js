@@ -104,7 +104,7 @@ export default function Users(options) {
             .then(row => done(null, { data$: row }));
         })
         .catch(err =>
-          done(null, { errorCode$: "SYSTEM_ERROR", errors$: err })
+          done(null, { errorCode$: "ERROR_SYSTEM", errors$: err })
         ) );
   });
 
@@ -127,7 +127,7 @@ export default function Users(options) {
       .apply(null, collection)
       .asyncList$(_query)
       .then(rows => done(null, { data$: rows }))
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   this.add("users:find_by_id", function usersFindById(args, done) {
@@ -167,7 +167,7 @@ export default function Users(options) {
         }
         return done(null, { data$: row });
       })
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   this.add("users:update_by_id", function usersFindById(args, done) {
@@ -259,7 +259,7 @@ export default function Users(options) {
             })
         );
       })
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   this.add("users:delete_by_id", function usersFindById(args, done) {
@@ -291,7 +291,7 @@ export default function Users(options) {
       .apply(null, collection)
       .asyncRemove$(_query)
       .then(row => done(null, { data$: row }))
-      .catch(err => done(null, { errorCode$: "SYSTEM_ERROR", errors$: err }));
+      .catch(err => done(null, { errorCode$: "ERROR_SYSTEM", errors$: err }));
   });
 
   return { name: "Users" };
