@@ -53,17 +53,17 @@ describe("Kryptstorm Service", function() {
       .catch(done);
   });
 
-  it("Service - use pattern & payload as a string", function(done) {
+  it("Service - use pattern as a string, wrong payload type", function(done) {
     app
-      .asyncAct$("services:test, " + app.util.pattern(payload))
-      .then(_basic.bind(null, done))
-      .catch(done);
-  });
-
-  it("Service - use pattern & payload as a object", function(done) {
-    app
-      .asyncAct$(_.assign({ services: "test" }, payload))
-      .then(_basic.bind(null, done))
+      .asyncAct$("services:test", undefined)
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
+        /** Error is ERROR_NONE */
+        expect(errorCode$).to.be.equal("ERROR_NONE");
+        /** Data must be array of item */
+        expect(data$).to.be.exist;
+        expect(data$).to.be.an("object");
+        return done();
+      })
       .catch(done);
   });
 });

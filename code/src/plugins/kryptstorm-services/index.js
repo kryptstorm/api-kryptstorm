@@ -4,17 +4,30 @@ import _ from "lodash";
 
 export default function Services({ services = {}, before = [], after = [] }) {
   const asyncAct$ = Bluebird.promisify(this.act, { context: this });
+  let _services;
 
   /** Register async act */
   this.decorate("asyncAct$", (pattern, params) => {
-    /** Convert object to string */
-    if (_.isObject(pattern)) pattern = this.util.pattern(pattern);
-    if (!_.isObject(params)) params = {};
+    /** Internal service */
+    if (this.has(pattern)) {
+      return asyncAct$(pattern, params);
+    }
 
-    return asyncAct$(pattern, params);
+    /** External service */
+    if (_services[pattern]) {
+    }
+
+    if (!_.isString(pattern)) pattern = this.util.pattern(pattern);
+    return Bluebird.reject(
+      new Error(
+        `Service [${pattern}] is not found. Please make sure you has registered internal or external service.`
+      )
+    );
   });
 
   this.add("init:Services", function initServices(args, done) {
+    /** Parse services */
+    _services = _prepareServices(services);
     return done();
   });
 

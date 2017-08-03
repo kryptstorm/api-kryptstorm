@@ -123,8 +123,8 @@ const _preparePayload = (req, rest) => {
   let _payload = {};
 
   /** Get JWT from header or query */
-  const accessToken = req.get("AccessToken");
-  const refreshToken = req.get("refreshToken");
+  const accessToken = req.get("X-Auth-Access-Token");
+  const refreshToken = req.get("X-Auth-Refresh-Token");
   _payload.accessToken = !_.isString(accessToken) ? _accessToken : "";
   _payload.refreshToken = !_.isString(refreshToken) ? _refreshToken : "";
 
