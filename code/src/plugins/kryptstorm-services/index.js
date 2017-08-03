@@ -64,25 +64,28 @@ export default function Services({
 
     return _.reduce(
       _patterns,
-      (result, _pattern) => {
-        const {
-          errorCode$ = "ERROR_NONE",
-          message$ = "",
-          data$ = {},
-          errors$
-        } = result;
+      (instance, _pattern) =>
+        instance.then(result => {
+          const {
+            errorCode$ = "ERROR_NONE",
+            message$ = "",
+            data$ = {},
+            errors$
+          } = result;
 
-        /** Server encountered an error while trying to handle request */
-        if (!_.isUndefined(errors$)) return Bluebird.reject({ errors$ });
+          /** Server encountered an error while trying to handle request */
+          if (!_.isUndefined(errors$)) return Bluebird.reject({ errors$ });
 
-        /** If errorCode$ is not equal to ERROR_NONE, response error code and error message */
-        if (errorCode$ !== "ERROR_NONE") {
-          return Bluebird.reject({ errorCode$, message$ });
-        }
+          /** If errorCode$ is not equal to ERROR_NONE, response error code and error message */
+          if (errorCode$ !== "ERROR_NONE") {
+            return Bluebird.reject({ errorCode$, message$ });
+          }
 
-        return _asyncAct$(_pattern, _.extend(params, result));
-      },
-      {}
+          return _asyncAct$(_pattern, params).then(_result =>
+            Bluebird.resolve(this.util.deepextend({}, result, _result))
+          );
+        }),
+      Bluebird.resolve({})
     );
   });
 
