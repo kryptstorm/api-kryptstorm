@@ -21,7 +21,7 @@ app.add("services:test", function(args, done) {
 
 describe("Kryptstorm Service", function() {
   const payload = { param: "param" };
-  const _basic = (done, { errorCode$ = "ERROR_NONE", data$ }) => {
+  const _basic = (done, { errorCode$ = "ERROR_NONE", data$, errors$ }) => {
     /** Error is ERROR_NONE */
     expect(errorCode$).to.be.equal("ERROR_NONE");
     /** Data must be array of item */
@@ -50,20 +50,6 @@ describe("Kryptstorm Service", function() {
     app
       .asyncAct$({ services: "test" }, payload)
       .then(_basic.bind(null, done))
-      .catch(done);
-  });
-
-  it("Service - use pattern as a string, wrong payload type", function(done) {
-    app
-      .asyncAct$("services:test", undefined)
-      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
-        /** Error is ERROR_NONE */
-        expect(errorCode$).to.be.equal("ERROR_NONE");
-        /** Data must be array of item */
-        expect(data$).to.be.exist;
-        expect(data$).to.be.an("object");
-        return done();
-      })
       .catch(done);
   });
 });
