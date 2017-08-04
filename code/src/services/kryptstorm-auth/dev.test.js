@@ -10,18 +10,20 @@ import { faker } from "../../services/kryptstorm-user/dev";
 import { STATUS_ACTIVE } from "../../services/kryptstorm-user/validation";
 import KryptstormAuth from ".";
 
-/** Init test app */
-const app = TestApp();
 const insertNumber = 1;
 const testCollection = ["mongo", "test_kryptstorm", "users"];
 const testCollectionName = testCollection[1] + "_" + testCollection[2];
 
-/** Register KryptstormUser to test */
-app.use(KryptstormUser, { collection: testCollection });
-app.use(KryptstormAuth);
+describe("KryptstormAuth - Basic", function() {
+  /** Init test app */
+  const app = TestApp();
 
-/** Begin test */
-describe("Kryptstorm Auth", function() {
+  /** Register kryptstorm service to use async method */
+  app.use(KryptstormServices);
+  /** Register KryptstormUser to test */
+  app.use(KryptstormUser, { collection: testCollection });
+  app.use(KryptstormAuth);
+
   let UserCollection,
     user = { password: "123456" };
 

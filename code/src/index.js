@@ -14,6 +14,7 @@ import KryptstormAuth from "./services/kryptstorm-auth";
 
 /** Http routes */
 import routes from "./routes";
+import { beforeHooks, afterHooks } from "./hooks";
 
 /** Init Seneca */
 const App = Seneca({
@@ -33,7 +34,7 @@ App.use("entity");
 
 /** Register kryptstorm Plugin */
 /** Kryptstorm Service */
-App.use(KryptstormServices);
+App.use(KryptstormServices, { beforeHooks, afterHooks });
 /** Kryptstorm Entities */
 App.use(KryptstormEnitties, {
   queryConfig: { limit$: Config.get("api.limitRow") }

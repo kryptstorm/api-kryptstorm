@@ -19,7 +19,6 @@ const TestApp = fn =>
     .test(fn)
     .use("mongo-store", Config.get("mongo"))
     .use("entity")
-    .use(KryptstormServices)
     .use(KryptstormEnitties);
 
 /** Export test to other file can use it to init test app */

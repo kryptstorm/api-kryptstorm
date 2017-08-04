@@ -11,7 +11,7 @@ const TestApp = fn =>
     log: "test"
   }).test(fn);
 
-describe("Basic", function() {
+describe("KryptstormServices - Basic", function() {
   /** Init test app */
   const app = TestApp();
   const payload = { param: "param" };
@@ -52,7 +52,7 @@ describe("Basic", function() {
   });
 });
 
-describe("Using global hooks", function() {
+describe("KryptstormServices - Using global hooks", function() {
   /** Init test app */
   const app = TestApp();
   const payload = { param: "param" };
@@ -103,7 +103,7 @@ describe("Using global hooks", function() {
   });
 });
 
-describe("Using both global and local hooks", function() {
+describe("KryptstormServices - Using both global and local hooks", function() {
   /** Init test app */
   const app = TestApp();
   const payload = { param: "param" };

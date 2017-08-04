@@ -35,7 +35,7 @@ export default function Services({
 
     if (!_.isString(pattern)) pattern = this.util.pattern(pattern);
     return Bluebird.reject(
-      new Error(
+      new ServiceError(
         `Service [${pattern}] is not found. Please make sure you has registered internal or external service.`
       )
     );
@@ -46,13 +46,15 @@ export default function Services({
     /** Pattern of asyncAct$ must a string or an object */
     if (!_.isString(pattern) && !_.isObject(pattern)) {
       return Bluebird.reject(
-        new Error("Pattern of asyncAct$ must a string or an object.")
+        new ServiceError("Pattern of asyncAct$ must a string or an object.")
       );
     }
 
     /** Params of asyncAct$ must an object */
     if (!_.isObject(params)) {
-      return Bluebird.reject(new Error("Params of asyncAct$ must an object."));
+      return Bluebird.reject(
+        new ServiceError("Params of asyncAct$ must an object.")
+      );
     }
 
     /** Resolve current pattern with hooks */
@@ -74,11 +76,13 @@ export default function Services({
           } = result;
 
           /** Server encountered an error while trying to handle request */
-          if (!_.isUndefined(errors$)) return Bluebird.reject({ errors$ });
+          if (!_.isUndefined(errors$)) {
+            return Bluebird.reject(new ServiceError(errors$.message));
+          }
 
           /** If errorCode$ is not equal to ERROR_NONE, response error code and error message */
           if (errorCode$ !== "ERROR_NONE") {
-            return Bluebird.reject({ errorCode$, message$ });
+            return Bluebird.reject(new ServiceError(message$, errorCode$));
           }
 
           return _asyncAct$(_pattern, params).then(_result =>
@@ -89,10 +93,18 @@ export default function Services({
     );
   });
 
+  /** Register Service error */
+  this.decorate(
+    "errors$",
+    (message, code, stack) => new ServiceError(message, code, stack)
+  );
+
   this.add("init:Services", function initServices(args, done) {
     /** Both before and after hook must be an object */
     if (!_.isObject(beforeHooks) || !_.isObject(afterHooks)) {
-      return done(new Error("Both before and after hook must be an object."));
+      return done(
+        this.errors$("Both before and after hook must be an object.")
+      );
     }
     /** Parse services */
     _services = _prepareServices(services);
@@ -126,3 +138,13 @@ const _prepareHooks = (pattern, hooks) => {
   if (_.isArray(hooks[pattern])) _patterns = [..._patterns, ...hooks[pattern]];
   return _patterns;
 };
+
+class ServiceError extends Error {
+  constructor(message, code = "ERROR_SYSTEM", stack) {
+    super(message);
+    this.errorCode = code;
+    if (stack) {
+      this.stack = stack;
+    }
+  }
+}

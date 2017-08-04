@@ -29,7 +29,7 @@ export default function Https(options) {
     /** This module is depend on kryptstorm-service */
     if (!this.has("init:Services")) {
       return done(
-        new Error("[kryptstorm-http] is depend on [kryptstorm-service]")
+        this.errors$("[kryptstorm-http] is depend on [kryptstorm-service]")
       );
     }
 

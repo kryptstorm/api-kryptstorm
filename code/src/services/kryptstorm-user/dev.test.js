@@ -16,17 +16,19 @@ import { faker } from "./dev";
 import KryptstormUser from ".";
 import { PUBLICK_FIELDS, STATUS_NEW } from "./validation";
 
-/** Init test app */
-const app = TestApp();
 const insertNumber = 5;
 const testCollection = ["mongo", "test_kryptstorm", "users"];
 const testCollectionName = testCollection[1] + "_" + testCollection[2];
 
-/** Register KryptstormUser to test */
-app.use(KryptstormUser);
-
 /** Begin test */
-describe("Kryptstorm Users", function() {
+describe("KryptstormUsers - Basic", function() {
+  /** Init test app */
+  const app = TestApp();
+  /** Register kryptstorm service to use async method */
+  app.use(KryptstormServices);
+  /** Register KryptstormUser to test */
+  app.use(KryptstormUser);
+
   let UserCollection, userId;
 
   /**

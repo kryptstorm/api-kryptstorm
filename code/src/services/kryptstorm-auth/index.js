@@ -48,7 +48,7 @@ export default function Auth() {
   this.add("init:Auth", function initAuth(args, done) {
     if (!collection) {
       return done(
-        new Error("[kryptstorm-auth] is depend on [kryptstorm-user]")
+        this.errors$("[kryptstorm-auth] is depend on [kryptstorm-user]")
       );
     }
     return done();
@@ -118,7 +118,6 @@ export default function Auth() {
   });
 
   this.add("auth:verify", function authVerify(args, done) {
-    const { attributes = {} } = args;
     const verificationFailedResponse = {
       errorCode$: "VERIFICATION_FAILED",
       message$: "Authentication has been failed."
@@ -126,7 +125,7 @@ export default function Auth() {
 
     let _refreshToken, _refreshJwtPayload;
 
-    return AuthValidationRules.onVerify(attributes)
+    return AuthValidationRules.onVerify(args)
       .then(({ accessToken, refreshToken }) => {
         _refreshToken = refreshToken;
         return asyncVerify$(accessToken, Config.get("jwt.secreteKey"));
