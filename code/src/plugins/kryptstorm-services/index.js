@@ -42,7 +42,7 @@ export default function Services({
   };
 
   /** Register async act */
-  this.decorate("asyncAct$", (pattern, params) => {
+  this.decorate("asyncAct$", (pattern, params = {}) => {
     /** Pattern of asyncAct$ must a string or an object */
     if (!_.isString(pattern) && !_.isObject(pattern)) {
       return Bluebird.reject(
