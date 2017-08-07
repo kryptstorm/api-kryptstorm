@@ -48,7 +48,9 @@ export default function Auth() {
   this.add("init:Auth", function initAuth(args, done) {
     if (!collection) {
       return done(
-        this.errors$("[kryptstorm-auth] is depend on [kryptstorm-user]")
+        this.XServices$.error(
+          "[kryptstorm-auth] is depend on [kryptstorm-user]"
+        )
       );
     }
     return done();

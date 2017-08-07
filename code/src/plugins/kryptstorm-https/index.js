@@ -29,7 +29,9 @@ export default function Https(options) {
     /** This module is depend on kryptstorm-service */
     if (!this.has("init:Services")) {
       return done(
-        this.errors$("[kryptstorm-http] is depend on [kryptstorm-service]")
+        this.XServices$.error(
+          "[kryptstorm-http] is depend on [kryptstorm-service]"
+        )
       );
     }
 
@@ -75,10 +77,28 @@ export default function Https(options) {
     });
 
     /** Handle 404 error */
-    server.use(_http404);
+    server.use((req, res, next) => {
+      return res.status(404).json({
+        errorCode: "ERROR_NOT_FOUND",
+        message: `The requested URL [${req.url}] was not found on this server`
+      });
+    });
 
     /** Handle system error */
-    server.use(_http500.bind(this, isDebug));
+    server.use((err, req, res, next) => {
+      let httpCode = 500,
+        errorResponse = { errorCode: "ERROR_SYSTEM", message: _errorMessage };
+      /** XServices error */
+      if (err.isXServicesError && isDebug) {
+        let { message, errorCode, _errors } = err;
+
+        errorResponse.errors = _errors;
+        errorResponse.errorCode = errorCode;
+        errorResponse.message = message;
+      }
+
+      return res.status(httpCode).json(errorResponse);
+    });
 
     return done();
   });
@@ -197,19 +217,4 @@ const _preparePagination = (limit, page) => {
     p.offset = (page - 1 < 0 ? page : page - 1) * limit;
   }
   return p;
-};
-
-/** Error 404 handler */
-const _http404 = (req, res, next) => {
-  return res.status(404).json({
-    errorCode: "ERROR_NOT_FOUND",
-    message: `The requested URL [${req.url}] was not found on this server`
-  });
-};
-
-/** Error 500 handler */
-const _http500 = (isDebug, err, req, res, next) => {
-  /** System error */
-  const message = isDebug && err.message ? err.message : _errorMessage;
-  return res.status(500).json({ errorCode: "ERROR_SYSTEM", message });
 };

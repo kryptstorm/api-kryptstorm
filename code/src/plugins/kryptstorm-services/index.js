@@ -13,7 +13,11 @@ export default function Services({
   let _services;
   const asyncAct$ = Bluebird.promisify(this.act, { context: this });
 
-  /** Hanle both internal and external service */
+  /**
+	 * Custom action method for seneca, 
+	 * allow access both internal and external method by one way
+	 * easy to use for developer
+	 */
   const _asyncAct$ = (pattern, params, services) => {
     /** Internal service */
     if (this.has(pattern)) {
@@ -35,25 +39,32 @@ export default function Services({
 
     if (!_.isString(pattern)) pattern = this.util.pattern(pattern);
     return Bluebird.reject(
-      new ServiceError(
+      new XServicesError(
         `Service [${pattern}] is not found. Please make sure you has registered internal or external service.`
       )
     );
   };
 
-  /** Register async act */
+  /**
+	 * Kryptstorm service
+	 * # Create service serror XServices$.error
+	 */
+  const XServices$ = {
+    error: (message, code, stack) => new XServicesError(message, code, stack)
+  };
+
   this.decorate("asyncAct$", (pattern, params = {}) => {
     /** Pattern of asyncAct$ must a string or an object */
     if (!_.isString(pattern) && !_.isObject(pattern)) {
       return Bluebird.reject(
-        new ServiceError("Pattern of asyncAct$ must a string or an object.")
+        new XServicesError("Pattern of asyncAct$ must a string or an object.")
       );
     }
 
     /** Params of asyncAct$ must an object */
     if (!_.isObject(params)) {
       return Bluebird.reject(
-        new ServiceError("Params of asyncAct$ must an object.")
+        new XServicesError("Params of asyncAct$ must an object.")
       );
     }
 
@@ -77,12 +88,12 @@ export default function Services({
 
           /** Server encountered an error while trying to handle request */
           if (!_.isUndefined(errors$)) {
-            return Bluebird.reject(new ServiceError(errors$.message));
+            return Bluebird.reject(new XServicesError(errors$.message));
           }
 
           /** If errorCode$ is not equal to ERROR_NONE, response error code and error message */
           if (errorCode$ !== "ERROR_NONE") {
-            return Bluebird.reject(new ServiceError(message$, errorCode$));
+            return Bluebird.reject(new XServicesError(message$, errorCode$));
           }
 
           return _asyncAct$(_pattern, params).then(_result =>
@@ -93,17 +104,13 @@ export default function Services({
     );
   });
 
-  /** Register Service error */
-  this.decorate(
-    "errors$",
-    (message, code, stack) => new ServiceError(message, code, stack)
-  );
+  this.decorate("XServices$", XServices$);
 
   this.add("init:Services", function initServices(args, done) {
     /** Both before and after hook must be an object */
     if (!_.isObject(beforeHooks) || !_.isObject(afterHooks)) {
       return done(
-        this.errors$("Both before and after hook must be an object.")
+        this.XServices$.error("Both before and after hook must be an object.")
       );
     }
     /** Parse services */
@@ -139,12 +146,13 @@ const _prepareHooks = (pattern, hooks) => {
   return _patterns;
 };
 
-class ServiceError extends Error {
-  constructor(message, code = "ERROR_SYSTEM", stack) {
+class XServicesError extends Error {
+  constructor(message, code = "ERROR_SYSTEM", _errors) {
     super(message);
+    this.isXServicesError = true;
     this.errorCode = code;
-    if (stack) {
-      this.stack = stack;
+    if (_errors) {
+      this._errors = _errors;
     }
   }
 }
