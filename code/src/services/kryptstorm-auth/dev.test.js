@@ -17,9 +17,6 @@ const testCollectionName = testCollection[1] + "_" + testCollection[2];
 describe("KryptstormAuth - Basic", function() {
   /** Init test app */
   const app = TestApp();
-
-  /** Register kryptstorm service to use async method */
-  app.use(KryptstormServices);
   /** Register KryptstormUser to test */
   app.use(KryptstormUser, { collection: testCollection });
   app.use(KryptstormAuth);
@@ -94,10 +91,8 @@ describe("KryptstormAuth - Basic", function() {
 
   it("Verification - by access token", function(done) {
     app
-      .asyncAct$("auth:verify", {
-        attributes: { accessToken: user.accessToken }
-      })
-      .then(({ errorCode$ = "ERROR_NONE", data$, errors$ }) => {
+      .asyncAct$("auth:verify", { accessToken: user.accessToken })
+      .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
         /** Data must be array of item */
@@ -111,9 +106,7 @@ describe("KryptstormAuth - Basic", function() {
 
   it("Verification - by refresh token", function(done) {
     app
-      .asyncAct$("auth:verify", {
-        attributes: { accessToken: user.refreshToken }
-      })
+      .asyncAct$("auth:verify", { accessToken: user.refreshToken })
       .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */
         expect(errorCode$).to.be.equal("ERROR_NONE");
@@ -129,10 +122,8 @@ describe("KryptstormAuth - Basic", function() {
   it("Verification - use refresh token to reset access token", function(done) {
     app
       .asyncAct$("auth:verify", {
-        attributes: {
-          accessToken: user.accessToken + "1",
-          refreshToken: user.refreshToken
-        }
+        accessToken: user.accessToken + "1",
+        refreshToken: user.refreshToken
       })
       .then(({ errorCode$ = "ERROR_NONE", data$ }) => {
         /** Error is ERROR_NONE */

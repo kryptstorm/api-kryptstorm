@@ -24,8 +24,6 @@ const testCollectionName = testCollection[1] + "_" + testCollection[2];
 describe("KryptstormUsers - Basic", function() {
   /** Init test app */
   const app = TestApp();
-  /** Register kryptstorm service to use async method */
-  app.use(KryptstormServices);
   /** Register KryptstormUser to test */
   app.use(KryptstormUser);
 
